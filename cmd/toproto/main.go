@@ -38,7 +38,7 @@ func toProto(rq *buildpb.BuildRQ) (rs *buildpb.BuildRS, err error) {
 		)
 		proto2Version := false
 
-		g.P("// Generate by ytctl plugin(toproto). DO NOT EDIT.")
+		g.P("// Generate by wctl plugin(toproto). DO NOT EDIT.")
 		// 语法版本
 		if syntax != nil && syntax.IntValue == 2 {
 			proto2Version = true
