@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/aggronmagi/wplugins/utils"
+	"golang.org/x/tools/imports"
 )
 
 //go:generate gogen option -n Option -o options.go
@@ -31,8 +32,8 @@ func generateOptions() interface{} {
 	return map[string]interface{}{
 		// 缩进
 		"Indent": "\t",
-		// Go格式化
-		"GoFmt": false,
+		// 代码格式化
+		"Format": func(in []byte) (out []byte, err error) { return in, nil },
 		// key 是否大写
 		"KeyTitle": true,
 	}
@@ -181,13 +182,8 @@ func (gen *Generator) WriteString(str string) {
 // GoFmtByest go文件格式化
 func (gen *Generator) Bytes() (data []byte, err error) {
 	data = gen.Buffer.Bytes()
-	if gen.cc.GoFmt {
-		data, err = format.Source(data)
-		// var buf *bytes.Buffer
-		// buf, err = goimportsBuf(gen.Buffer)
-		// if buf != nil {
-		// 	data = buf.Bytes()
-		// }
+	if gen.cc.Format != nil {
+		return gen.cc.Format(data)
 	}
 	return
 }
@@ -222,13 +218,59 @@ func (gen *Generator) PopAndWrite() {
 	}
 }
 
-func goimportsBuf(buf *bytes.Buffer) (*bytes.Buffer, error) {
+func GoFormat(in []byte) (out []byte, err error) {
+	return format.Source(in)
+}
+
+func GoimportsCmdFormat(in []byte) (out []byte, err error) {
+	ib := bytes.NewBuffer(in)
+	ob := bytes.NewBuffer(nil)
+	cmd := exec.Command("goimports")
+	cmd.Stdin = ib
+	cmd.Stdout = ob
+
+	err = cmd.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	return ob.Bytes(), err
+}
+
+func GoFormat2(in []byte) ([]byte, error) {
+	opts := &imports.Options{
+		TabIndent: false,
+		TabWidth:  4,
+		Fragment:  true,
+		Comments:  true,
+	}
+	data, err := imports.Process("", in, opts)
+	if err != nil {
+		return nil, err
+	}
+	return format.Source(data)
+}
+
+// OptionGoimportsFormtat use the command line `goimports` command to
+// format first. If an error is reported, use the default formatting method.
+func OptionGoimportsFormtat(in []byte) ([]byte, error) {
 	out := bytes.NewBuffer(nil)
 	cmd := exec.Command("goimports")
-	cmd.Stdin = buf
+	cmd.Stdin = bytes.NewBuffer(in)
 	cmd.Stdout = out
-
 	err := cmd.Run()
-
-	return out, err
+	if err == nil {
+		return out.Bytes(), nil
+	}
+	opts := &imports.Options{
+		TabIndent: false,
+		TabWidth:  4,
+		Fragment:  true,
+		Comments:  true,
+	}
+	data, err := imports.Process("", in, opts)
+	if err != nil {
+		return nil, err
+	}
+	return format.Source(data)
 }

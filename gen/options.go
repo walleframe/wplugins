@@ -9,8 +9,8 @@ var _ = generateOptions()
 type Options struct {
 	// 缩进
 	Indent string
-	// Go格式化
-	GoFmt bool
+	// 代码格式化
+	Format func(in []byte) (out []byte, err error)
 	// key 是否大写
 	KeyTitle bool
 }
@@ -24,12 +24,12 @@ func WithIndent(v string) Option {
 	}
 }
 
-// Go格式化
-func WithGoFmt(v bool) Option {
+// 代码格式化
+func WithFormat(v func(in []byte) (out []byte, err error)) Option {
 	return func(cc *Options) Option {
-		previous := cc.GoFmt
-		cc.GoFmt = v
-		return WithGoFmt(previous)
+		previous := cc.Format
+		cc.Format = v
+		return WithFormat(previous)
 	}
 }
 
@@ -84,8 +84,10 @@ var watchDogOptions func(cc *Options)
 // newDefaultOptions new option with default value
 func newDefaultOptions() *Options {
 	cc := &Options{
-		Indent:   "\t",
-		GoFmt:    false,
+		Indent: "\t",
+		Format: func(in []byte) (out []byte, err error) {
+			return in, nil
+		},
 		KeyTitle: true,
 	}
 	return cc

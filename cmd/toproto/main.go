@@ -121,14 +121,22 @@ func getTypeName(typ *buildpb.TypeDesc, lowercase bool) (name string, err error)
 			return typ.Key, nil
 		}
 		lst := strings.Split(typ.Key, ".")
-		return lst[0] + "." + utils.Title(lst[1]), nil
+		if len(lst) > 1 {
+			return lst[0] + "." + utils.Title(lst[1]), nil
+		} else {
+			return utils.Title(typ.Key), nil
+		}
 	case buildpb.FieldType_ListType:
 		if typ.ElemCustom {
 			if lowercase {
 				return "repeated " + typ.Key, nil
 			}
 			lst := strings.Split(typ.Key, ".")
-			return "repeated " + lst[0] + "." + utils.Title(lst[1]), nil
+			if len(lst) > 1 {
+				return "repeated " + lst[0] + "." + utils.Title(lst[1]), nil
+			} else {
+				return "repeated " + utils.Title(lst[0]), nil
+			}
 		}
 		name, err = baseTypeName(typ.Key)
 		if err != nil {
@@ -146,7 +154,12 @@ func getTypeName(typ *buildpb.TypeDesc, lowercase bool) (name string, err error)
 				val = typ.Value
 			}
 			lst := strings.Split(typ.Value, ".")
-			val = lst[0] + "." + utils.Title(lst[1])
+			if len(lst) > 1 {
+				val = lst[0] + "." + utils.Title(lst[1])
+			} else {
+				val = utils.Title(lst[0])
+			}
+
 		} else {
 			val, err = baseTypeName(typ.Value)
 		}
