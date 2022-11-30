@@ -17,7 +17,11 @@ func main() {
 
 func generateWalleZapLog(prog *buildpb.FileDesc, depend map[string]*buildpb.FileDesc) (out []*buildpb.BuildOutput, err error) {
 
-	g := gen.New(gen.WithFormat(gen.GoFormat2), gen.WithIndent("    "), gen.WithKeyTitle(true))
+	g := gen.New(
+		gen.WithFormat(gen.GoFormat2),
+		gen.WithIndent("    "),
+		gen.WithKeyTitle(true),
+	)
 
 	g.P("// Generate by wctl plugin(wzap). DO NOT EDIT.")
 	g.P("package ", prog.Pkg.Package, ";")

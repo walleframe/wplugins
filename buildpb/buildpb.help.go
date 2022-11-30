@@ -259,3 +259,7 @@ func (x *MsgDesc) ContainCustom() bool {
 	}
 	return false
 }
+
+func (x *MethodDesc) IsNotify() bool {
+	return x.Reply == nil && x.MethodFlag == int32(MethodType_Notify)
+}
