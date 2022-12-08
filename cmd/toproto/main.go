@@ -75,13 +75,23 @@ func toProto(rq *buildpb.BuildRQ) (rs *buildpb.BuildRS, err error) {
 			// }
 			g.Pf(`import "%s";`, strings.Replace(v.File, filepath.Ext(v.File), ".proto", -1))
 		}
+		for _, e := range desc.Enums {
+			g.Doc(e.Doc)
+			g.P("enum ", g.Key(e.Name), "{")
+			g.In()
+			for _, v := range e.Values {
+				g.P(v.Doc)
+				g.Pf("%s = %d;", g.Key(v.Name), v.Value)
+			}
+			g.Out()
+			g.P("}")
+		}
 		// 消息转换
 		var typ string
 		for _, msg := range desc.Msgs {
 			g.Doc(msg.Doc)
 			g.P("message ", g.Key(msg.Name), " {")
 			g.In()
-
 			for _, field := range msg.Fields {
 				g.Doc(field.Doc)
 				typ, err = getTypeName(field.Type, lowercase)
@@ -176,8 +186,8 @@ func baseTypeName(in string) (out string, err error) {
 	switch in {
 	case "string":
 		out = in
-	case "bytes":
-		out = in
+	case "bytes", "binary":
+		out = "bytes"
 	case "int8", "int16", "int32", "int":
 		out = "int32"
 	case "uint8", "uint16", "uint32", "uint":
