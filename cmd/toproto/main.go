@@ -80,7 +80,7 @@ func toProto(rq *buildpb.BuildRQ) (rs *buildpb.BuildRS, err error) {
 			g.P("enum ", g.Key(e.Name), "{")
 			g.In()
 			for _, v := range e.Values {
-				g.P(v.Doc)
+				g.Doc(v.Doc)
 				g.Pf("%s = %d;", g.Key(v.Name), v.Value)
 			}
 			g.Out()
