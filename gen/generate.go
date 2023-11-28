@@ -1,26 +1,33 @@
 /*
-   Copyright © 2020 aggronmagi <czy463@163.com>
+Copyright © 2020 aggronmagi <czy463@163.com>
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 package gen
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"go/ast"
 	"go/format"
+	"go/parser"
+	"go/printer"
+	"go/token"
 	"log"
 	"os/exec"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/aggronmagi/wplugins/utils"
@@ -273,4 +280,93 @@ func OptionGoimportsFormtat(in []byte) ([]byte, error) {
 		return nil, err
 	}
 	return format.Source(data)
+}
+
+// Content returns the contents of the generated file.
+func Content(filename string, original []byte, packageNames map[string]string) ([]byte, error) {
+	if !strings.HasSuffix(filename, ".go") {
+		return original, nil
+	}
+
+	// Reformat generated code.
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "", original, parser.ParseComments)
+	if err != nil {
+		// Print out the bad code with line numbers.
+		// This should never happen in practice, but it can while changing generated code
+		// so consider this a debugging aid.
+		var src bytes.Buffer
+		s := bufio.NewScanner(bytes.NewReader(original))
+		for line := 1; s.Scan(); line++ {
+			fmt.Fprintf(&src, "%5d\t%s\n", line, s.Bytes())
+		}
+		return nil, fmt.Errorf("%v: unparsable Go source: %v\n%v", filename, err, src.String())
+	}
+
+	// Collect a sorted list of all imports.
+	var importPaths [][2]string
+	rewriteImport := func(importPath string) string {
+		// if f := g.gen.opts.ImportRewriteFunc; f != nil {
+		// 	return string(f(GoImportPath(importPath)))
+		// }
+		return importPath
+	}
+	for importPath := range packageNames {
+		pkgName := string(packageNames[importPath])
+		pkgPath := rewriteImport(string(importPath))
+		importPaths = append(importPaths, [2]string{pkgName, pkgPath})
+	}
+	// for importPath := range g.manualImports {
+	// 	if _, ok := g.packageNames[importPath]; !ok {
+	// 		pkgPath := rewriteImport(string(importPath))
+	// 		importPaths = append(importPaths, [2]string{"_", pkgPath})
+	// 	}
+	// }
+	sort.Slice(importPaths, func(i, j int) bool {
+		return importPaths[i][1] < importPaths[j][1]
+	})
+
+	// Modify the AST to include a new import block.
+	if len(importPaths) > 0 {
+		// Insert block after package statement or
+		// possible comment attached to the end of the package statement.
+		pos := file.Package
+		tokFile := fset.File(file.Package)
+		pkgLine := tokFile.Line(file.Package)
+		for _, c := range file.Comments {
+			if tokFile.Line(c.Pos()) > pkgLine {
+				break
+			}
+			pos = c.End()
+		}
+
+		// Construct the import block.
+		impDecl := &ast.GenDecl{
+			Tok:    token.IMPORT,
+			TokPos: pos,
+			Lparen: pos,
+			Rparen: pos,
+		}
+		for _, importPath := range importPaths {
+			impDecl.Specs = append(impDecl.Specs, &ast.ImportSpec{
+				Name: &ast.Ident{
+					Name:    importPath[0],
+					NamePos: pos,
+				},
+				Path: &ast.BasicLit{
+					Kind:     token.STRING,
+					Value:    strconv.Quote(importPath[1]),
+					ValuePos: pos,
+				},
+				EndPos: pos,
+			})
+		}
+		file.Decls = append([]ast.Decl{impDecl}, file.Decls...)
+	}
+
+	var out bytes.Buffer
+	if err = (&printer.Config{Mode: printer.TabIndent | printer.UseSpaces, Tabwidth: 8}).Fprint(&out, fset, file); err != nil {
+		return nil, fmt.Errorf("%v: can not reformat Go source: %v", filename, err)
+	}
+	return out.Bytes(), nil
 }

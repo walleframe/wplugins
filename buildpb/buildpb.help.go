@@ -2,6 +2,7 @@ package buildpb
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/aggronmagi/wplugins/utils"
@@ -17,6 +18,18 @@ func (x *OptionDesc) getOpt(opt string) (val *OptionValue) {
 
 func (x *OptionDesc) HasOption(opt string) (ok bool) {
 	return x.getOpt(opt) != nil
+}
+
+func (x *OptionDesc) GetOptionBool(opt string) (ok bool) {
+	v := x.getOpt(opt)
+	if v == nil {
+		return
+	}
+	if v.Value != "" {
+		ok, _ = strconv.ParseBool(v.Value)
+		return
+	}
+	return v.IntValue != 0
 }
 func (x *OptionDesc) GetStringCheck(opt string) (val string, ok bool) {
 	v := x.getOpt(opt)
@@ -119,6 +132,7 @@ func (x *MsgDesc) GetInt64(opt string, def int64) (val int64) {
 func (x *Field) HasOption(opt string) (ok bool) {
 	return x.Options.HasOption(opt)
 }
+
 func (x *Field) GetStringCheck(opt string) (val string, ok bool) {
 	return x.Options.GetStringCheck(opt)
 }
@@ -262,4 +276,17 @@ func (x *MsgDesc) ContainCustom() bool {
 
 func (x *MethodDesc) IsNotify() bool {
 	return x.Reply == nil && x.MethodFlag == int32(MethodType_Notify)
+}
+
+func (x *DocDesc) ToDoc() string {
+	if x == nil {
+		return ""
+	}
+	buf := strings.Builder{}
+	buf.Grow(len(x.Doc) * 64)
+	for _, v := range x.Doc {
+		buf.WriteString(v)
+		buf.WriteByte('\n')
+	}
+	return buf.String()
 }
