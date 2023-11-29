@@ -1,0 +1,22 @@
+#+startup: content
+#+title: wpb插件文档
+* wpb文档
+** 环境变量
+| 变量               | 默认值                                     | 解释                                        |
+|--------------------+--------------------------------------------+---------------------------------------------|
+| GOPB_WIRE_PACKAGE  | github.com/aggronmagi/walle/util/protowire | 序列化代码使用的包,默认是从protobuf库复制的 |
+| GOPB_GEN_GET       | false                                      | 默认不生成get接口                           |
+| GOPB_GEN_ZAP       | true                                       | 默认生成zap日志接口                         |
+| GOPB_GEN_EMPTY_MSG | false                                      | 默认不生成空消息和空枚举类型                |
+** 兼容性
+*** 不支持 oneof
+*** map 类型不支持设置 signed/fixed
+*** zap 打印二进制会先base64编码
+** 使用方式
+在字段选项上支持以下option.
+| option       | value      | 影响类型                   |
+|--------------+------------+----------------------------|
+| proto.packed | true/false | array                      |
+| proto.fixed  | true/false | int32,int64,uint32,uint64, |
+| proto.signed | true/false | int32,int64,uint32,uint64, |
+

@@ -1,0 +1,21 @@
+* wplugins
+walle generate plugins
+** printer
+打印插件接收的数据,用于插件开发调试期间。
+** wpb
+生成go结构体及zap日志接口,兼容protobuf序列化。支持go基础类型（int8等）。
+** wrpc 
+walle rpc 代码生成
+** wredis 
+redis 操作代码生成
+** wmysql
+mysql 操作代码生成
+* Deprecated
+
+** toproto
+生成protobuf 3文件
+
+protobuf 生成go代码 使用gogofaster
+go install github.com/golang/protobuf/protoc-gen-go@latest
+go install github.com/gogo/protobuf/protoc-gen-gogofaster@latest
+

@@ -17,6 +17,8 @@ import (
 	"go.uber.org/multierr"
 )
 
+var GenerateEmptyMessage = false
+
 func init() {
 	// 如果环境变量设置了值, 读取作为为默认值. 优先使用传递的参数
 	env := os.Getenv("GOPB_WIRE_PACKAGE")
@@ -30,6 +32,10 @@ func init() {
 	env = os.Getenv("GOPB_GEN_ZAP")
 	if env != "" {
 		genparse.Zap, _ = strconv.ParseBool(env)
+	}
+	env = os.Getenv("GOPB_GEN_EMPTY_MSG")
+	if env != "" {
+		GenerateEmptyMessage = true
 	}
 }
 
@@ -79,14 +85,29 @@ func generateWalleProrobuf(prog *buildpb.FileDesc, depend map[string]*buildpb.Fi
 
 		return buf.String()
 	}
+	genCount := 0
 	for _, e := range prog.Enums {
-		err = multierr.Append(err, genparse.ParseEnum(data, g,  e))
+		// 默认不生成空枚举
+		if GenerateEmptyMessage == false && len(e.Values) < 1 {
+			continue
+		}
+		err = multierr.Append(err, genparse.ParseEnum(data, g, e))
+		genCount++
 	}
 	for _, m := range prog.Msgs {
+		// 默认不生成空消息
+		if GenerateEmptyMessage == false && len(m.Fields) < 1 {
+			continue
+		}
 		err = multierr.Append(err, genparse.ParseMessage(data, g, m))
+		genCount++
 	}
 	if err != nil {
 		return
+	}
+	// 没有生成任何消息,直接返回.不生成文件
+	if genCount == 0 {
+		return 
 	}
 	// generate
 	buf, err := gengo.GenExec(data)

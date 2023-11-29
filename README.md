@@ -1,2 +1,0 @@
-# wplugins
-walle generate plugins
