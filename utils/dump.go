@@ -49,7 +49,7 @@ func (v *variable) dump(val reflect.Value, name string, ignore bool) {
 			//l := val.Len()
 			keys := val.MapKeys()
 			for _, k := range keys {
-				v.dump(val.MapIndex(k), k.Interface().(string), true)
+				v.dump(val.MapIndex(k), k.Interface().(string), false)
 			}
 		case reflect.Ptr:
 			if !val.IsNil() {

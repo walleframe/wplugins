@@ -90,6 +90,7 @@ func GenExec(data *GenerateStruct) (_ []byte, err error) {
 		err = fmt.Errorf("parse full template failed:%w", err)
 		return
 	}
+	// basic import 
 	data.Import("strconv", "")
 	data.Import("errors", "")
 	data.Import("math", "")

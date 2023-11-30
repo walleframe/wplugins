@@ -16,6 +16,16 @@ func (x *OptionDesc) getOpt(opt string) (val *OptionValue) {
 	return
 }
 
+func (x *OptionDesc) RangeOptions(prefix string, rf func(opt *OptionValue) bool) {
+	for k, v := range x.Options {
+		if strings.HasPrefix(k, prefix) {
+			if !rf(v) {
+				return
+			}
+		}
+	}
+}
+
 func (x *OptionDesc) HasOption(opt string) (ok bool) {
 	return x.getOpt(opt) != nil
 }

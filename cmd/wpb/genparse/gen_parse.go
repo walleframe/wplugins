@@ -6,6 +6,7 @@ import (
 	"github.com/aggronmagi/wplugins/buildpb"
 	"github.com/aggronmagi/wplugins/cmd/wpb/gengo"
 	"github.com/aggronmagi/wplugins/gen"
+	"github.com/aggronmagi/wplugins/options"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -15,7 +16,7 @@ import (
 var (
 	Getter bool
 	// "google.golang.org/protobuf/encoding/protowire"
-	WirePkg string = "github.com/aggronmagi/walle/util/protowire"
+	WirePkg string = "github.com/walleframe/walle/util/protowire"
 	Zap     bool   = true
 )
 
@@ -31,8 +32,9 @@ func ParseEnum(t *gengo.GenerateStruct, g *gen.Generator, e *buildpb.EnumDesc) (
 	// 	e.Desc.ParentFile(),
 	// 	e.Desc.Options().(*descriptorpb.EnumOptions).GetDeprecated()).String()
 	enum.LeadingComments = e.Doc.ToDoc() //e.GetDoc().String()
-	enum.TypeName = e.Name               //g.QualifiedGoIdent(e.GoIdent)
-	enum.GoName = g.Key(e.Name)          // e.GoIdent.GoName
+	enum.TrailingComment = e.Doc.GetTailDoc()
+	enum.TypeName = e.Name      //g.QualifiedGoIdent(e.GoIdent)
+	enum.GoName = g.Key(e.Name) // e.GoIdent.GoName
 
 	for _, value := range e.Values {
 		val := &gengo.GenerateEnumValue{}
@@ -41,6 +43,7 @@ func ParseEnum(t *gengo.GenerateStruct, g *gen.Generator, e *buildpb.EnumDesc) (
 		// 	value.Desc.Options().(*descriptorpb.EnumValueOptions).GetDeprecated()).String()
 		// val.TrailingComment = trailingComment(value.Comments.Trailing).String()
 		val.LeadingComments = value.Doc.ToDoc() //value.GetDoc().String()
+		val.TrailingComment = value.Doc.GetTailDoc()
 		// val.Desc = string(value.Desc.Name())
 		// if value.Desc != e.Desc.Values().ByNumber(value.Desc.Number()) {
 		// 	val.Duplicate = "// Duplicate value: "
@@ -58,13 +61,19 @@ func ParseEnum(t *gengo.GenerateStruct, g *gen.Generator, e *buildpb.EnumDesc) (
 	return
 }
 
-func ParseMessage(t *gengo.GenerateStruct, g *gen.Generator, m *buildpb.MsgDesc) (err error) {
+func ParseMessage(t *gengo.GenerateStruct, g *gen.Generator, m *buildpb.MsgDesc, ignoreCheck func(m *buildpb.MsgDesc) bool) (err error) {
+
+	if !ignoreCheck(m) {
+		return
+	}
+
 	t.WirePkg = WirePkg
 	msg := &gengo.GenerateMessage{}
 	// msg.LeadingComments = appendDeprecationSuffix(m.Comments.Leading,
 	// 	m.Desc.ParentFile(),
 	// 	m.Desc.Options().(*descriptorpb.MessageOptions).GetDeprecated()).String()
 	msg.LeadingComments = m.Doc.ToDoc() // m.GetDoc().String()
+	msg.TrailingComment = m.Doc.GetTailDoc()
 	msg.TypeName = g.Key(m.Name)
 	msg.GoName = g.Key(m.Name)
 	msg.GenGetter = Getter
@@ -87,9 +96,9 @@ func ParseMessage(t *gengo.GenerateStruct, g *gen.Generator, m *buildpb.MsgDesc)
 	// 	ParseEnum(t, g, f, en)
 	// }
 	// sub message
-	// for _, msg := range m.Messages {
-	// 	ParseMessage(t, g, f, msg)
-	// }
+	for _, msg := range m.SubMsgs {
+		ParseMessage(t, g, msg, ignoreCheck)
+	}
 	return
 }
 
@@ -104,6 +113,7 @@ func parseMessageField(msg *gengo.GenerateMessage, g *gen.Generator, m *buildpb.
 
 	// 类型相关
 	genField.LeadingComments = field.Doc.ToDoc() //field.GetDoc().String()
+	genField.TrailingComment = field.Doc.GetTailDoc()
 	//genField.TrailingComment = trailingComment(field.Comments.Trailing).String()
 	genField.TypeName = goType
 	genField.GoName = g.Key(field.Name)
@@ -180,7 +190,7 @@ func parseMessageField(msg *gengo.GenerateMessage, g *gen.Generator, m *buildpb.
 			return "len(" + vname + ") > 0"
 		}
 
-		if field.Options.GetOptionBool(FlagOptPacked) {
+		if field.Options.GetOptionBool(options.ProtoFieldOptPacked) {
 			parseFillListPackedFiled(genField, field)
 		} else {
 			parseFillListNoPackedFiled(genField, field)
@@ -216,7 +226,7 @@ func switchProtoType(field *buildpb.Field) (typ int, desc string) {
 			typ = int(protowire.Fixed64Type)
 			return
 		}
-		if field.Options.GetOptionBool(FlagOptFixed) {
+		if field.Options.GetOptionBool(options.ProtoFieldOptFixed) {
 			switch field.Type.KeyBase {
 			case buildpb.BaseTypeDesc_Uint64, buildpb.BaseTypeDesc_Int64:
 				desc = "protowire.Fixed64Type"
@@ -235,7 +245,7 @@ func switchProtoType(field *buildpb.Field) (typ int, desc string) {
 		desc = "protowire.VarintType"
 		typ = int(protowire.VarintType)
 	case field.IsList():
-		if field.Options.GetOptionBool(FlagOptPacked) {
+		if field.Options.GetOptionBool(options.ProtoFieldOptPacked) {
 			desc = "protowire.BytesType"
 			typ = int(protowire.BytesType)
 			return
@@ -279,8 +289,8 @@ func switchProtoKind(field *buildpb.Field) protoreflect.Kind {
 			return protoreflect.DoubleKind
 		}
 
-		if field.Options.GetOptionBool(FlagOptFixed) {
-			if field.Options.GetOptionBool(FlagOptSigned) {
+		if field.Options.GetOptionBool(options.ProtoFieldOptFixed) {
+			if field.Options.GetOptionBool(options.ProtoFieldOptSigned) {
 				switch field.Type.KeyBase {
 				case buildpb.BaseTypeDesc_Int32, buildpb.BaseTypeDesc_Uint32:
 					return protoreflect.Sfixed32Kind
@@ -295,7 +305,7 @@ func switchProtoKind(field *buildpb.Field) protoreflect.Kind {
 				return protoreflect.Fixed64Kind
 			}
 		}
-		if field.Options.GetOptionBool(FlagOptSigned) {
+		if field.Options.GetOptionBool(options.ProtoFieldOptSigned) {
 			switch field.Type.KeyBase {
 			case buildpb.BaseTypeDesc_Int32, buildpb.BaseTypeDesc_Uint32:
 				return protoreflect.Sint32Kind
@@ -351,7 +361,7 @@ func parseFillBasicFiled(genField *gengo.GenerateField, field *buildpb.Field) {
 
 	// if utils.Title(field.Name) == "OptionalSint32" {
 	// 	log.Println(utils.Sdump(field, "OptionalSint32"))
-	// 	log.Println(field.Options.GetOptionBool(FlagOptSigned))
+	// 	log.Println(field.Options.GetOptionBool(options.ProtoFieldOptSigned))
 	// }
 
 	genField.CheckNotEmpty = func(x string) string {
@@ -398,7 +408,7 @@ func parseFillBasicFiled(genField *gengo.GenerateField, field *buildpb.Field) {
 		genField.TemplateDecode = "decode.bytes"
 
 	default:
-		if field.Options.GetOptionBool(FlagOptFixed) {
+		if field.Options.GetOptionBool(options.ProtoFieldOptFixed) {
 			switch field.Type.KeyBase {
 			case buildpb.BaseTypeDesc_Int32, buildpb.BaseTypeDesc_Uint32:
 				genField.TemplateSize = "size.fix32"
@@ -412,7 +422,7 @@ func parseFillBasicFiled(genField *gengo.GenerateField, field *buildpb.Field) {
 				return
 			}
 		}
-		if field.Options.GetOptionBool(FlagOptSigned) {
+		if field.Options.GetOptionBool(options.ProtoFieldOptSigned) {
 			switch field.Type.KeyBase {
 			case buildpb.BaseTypeDesc_Int32, buildpb.BaseTypeDesc_Int64:
 				// log.Println("use sint")
@@ -476,7 +486,7 @@ func parseFillListPackedFiled(genField *gengo.GenerateField, field *buildpb.Fiel
 		genField.TemplateEncode = "encode.packed.bytes"
 		genField.TemplateDecode = "decode.slice.bytes"
 	default:
-		if field.Options.GetOptionBool(FlagOptFixed) {
+		if field.Options.GetOptionBool(options.ProtoFieldOptFixed) {
 			switch field.Type.KeyBase {
 			case buildpb.BaseTypeDesc_Int32, buildpb.BaseTypeDesc_Uint32:
 				genField.TemplateSize = "size.packed.fix32"
@@ -490,7 +500,7 @@ func parseFillListPackedFiled(genField *gengo.GenerateField, field *buildpb.Fiel
 				return
 			}
 		}
-		if field.Options.GetOptionBool(FlagOptSigned) {
+		if field.Options.GetOptionBool(options.ProtoFieldOptSigned) {
 			switch field.Type.KeyBase {
 			case buildpb.BaseTypeDesc_Int32, buildpb.BaseTypeDesc_Int64:
 				genField.TemplateSize = "size.packed.sint"
@@ -553,7 +563,7 @@ func parseFillListNoPackedFiled(genField *gengo.GenerateField, field *buildpb.Fi
 		genField.TemplateEncode = "encode.nopack.bytes"
 		genField.TemplateDecode = "decode.slice.bytes"
 	default:
-		if field.Options.GetOptionBool(FlagOptFixed) {
+		if field.Options.GetOptionBool(options.ProtoFieldOptFixed) {
 			switch field.Type.KeyBase {
 			case buildpb.BaseTypeDesc_Int32, buildpb.BaseTypeDesc_Uint32:
 				genField.TemplateSize = "size.nopack.fix32"
@@ -567,7 +577,7 @@ func parseFillListNoPackedFiled(genField *gengo.GenerateField, field *buildpb.Fi
 				return
 			}
 		}
-		if field.Options.GetOptionBool(FlagOptSigned) {
+		if field.Options.GetOptionBool(options.ProtoFieldOptSigned) {
 			switch field.Type.KeyBase {
 			case buildpb.BaseTypeDesc_Int32, buildpb.BaseTypeDesc_Int64:
 				genField.TemplateSize = "size.nopack.sint"

@@ -81,9 +81,9 @@ func getZaoFieldMapKey(field *gengo.GenerateField) (funcName string) {
 	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
 		funcName = "strconv.FormatUint(k, 10)"
 	case protoreflect.FloatKind:
-		funcName = "strconv.FormatFloat32(k, 10)"
+		funcName = "strconv.FormatFloat32(k,'f', -1, 32)"
 	case protoreflect.DoubleKind:
-		funcName = "strconv.FormatFloat64(k, 10)"
+		funcName = "strconv.FormatFloat64(k, 'f', -1, 64)"
 	case protoreflect.StringKind:
 		funcName = "k"
 	case protoreflect.BytesKind:

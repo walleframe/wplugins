@@ -12,12 +12,6 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-const (
-	FlagOptPacked = "proto.packed"
-	FlagOptFixed  = "proto.fixed"
-	FlagOptSigned = "proto.signed"
-)
-
 // Field numbers for google.protobuf.FileDescriptorProto.
 const (
 	FileDescriptorProto_Name_field_number             protoreflect.FieldNumber = 1
@@ -135,7 +129,12 @@ func fieldGoType(g *gen.Generator, field *buildpb.Field) (goType string, pointer
 		goType = fieldBasicGoType(field.Type.KeyBase)
 	case buildpb.FieldType_CustomType:
 		pointer = true
-		goType = g.Key(field.Type.Key)
+		if strings.Contains(field.Type.Key, ".") {
+			typs := strings.SplitN(field.Type.Key, ".", 2)
+			goType = typs[0] + "." + g.Key(typs[1])
+		} else {
+			goType = g.Key(field.Type.Key)
+		}
 	case buildpb.FieldType_ListType:
 		if field.Type.ElemCustom {
 			goType = "[]*" + g.Key(field.Type.Key)

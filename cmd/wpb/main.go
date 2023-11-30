@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/aggronmagi/wplugins/buildpb"
 	"github.com/aggronmagi/wplugins/cmd/wpb/gengo"
 	"github.com/aggronmagi/wplugins/cmd/wpb/genparse"
 	"github.com/aggronmagi/wplugins/gen"
+	"github.com/aggronmagi/wplugins/options"
+	"github.com/aggronmagi/wplugins/utils"
 	"github.com/aggronmagi/wplugins/utils/plugin"
 	"go.uber.org/multierr"
 )
@@ -21,22 +21,10 @@ var GenerateEmptyMessage = false
 
 func init() {
 	// 如果环境变量设置了值, 读取作为为默认值. 优先使用传递的参数
-	env := os.Getenv("GOPB_WIRE_PACKAGE")
-	if env != "" {
-		genparse.WirePkg = env
-	}
-	env = os.Getenv("GOPB_GEN_GET")
-	if env != "" {
-		genparse.Getter, _ = strconv.ParseBool(env)
-	}
-	env = os.Getenv("GOPB_GEN_ZAP")
-	if env != "" {
-		genparse.Zap, _ = strconv.ParseBool(env)
-	}
-	env = os.Getenv("GOPB_GEN_EMPTY_MSG")
-	if env != "" {
-		GenerateEmptyMessage = true
-	}
+	utils.GetEnvString("GOPB_WIRE_PACKAGE", &genparse.WirePkg)
+	utils.GetEnvBool("GOPB_GEN_GET", &genparse.Getter)
+	utils.GetEnvBool("GOPB_GEN_ZAP", &genparse.Zap)
+	utils.GetEnvBool("GOPB_GEN_EMPTY_MSG", &GenerateEmptyMessage)
 }
 
 func main() {
@@ -94,20 +82,45 @@ func generateWalleProrobuf(prog *buildpb.FileDesc, depend map[string]*buildpb.Fi
 		err = multierr.Append(err, genparse.ParseEnum(data, g, e))
 		genCount++
 	}
+
 	for _, m := range prog.Msgs {
-		// 默认不生成空消息
-		if GenerateEmptyMessage == false && len(m.Fields) < 1 {
-			continue
-		}
-		err = multierr.Append(err, genparse.ParseMessage(data, g, m))
-		genCount++
+		err = multierr.Append(err, genparse.ParseMessage(data, g, m, func(m *buildpb.MsgDesc) bool {
+			// 默认不生成空消息
+			if GenerateEmptyMessage == false && len(m.Fields) < 1 {
+				return false
+			}
+			// 过滤不生成redis/mysql定义消息 - 无意义
+			if m.HasOption(options.RedisOpKey) || m.HasOption(options.SqlTableName) {
+				return false
+			}
+			genCount++
+			return true
+		}))
 	}
 	if err != nil {
 		return
 	}
 	// 没有生成任何消息,直接返回.不生成文件
 	if genCount == 0 {
-		return 
+		return
+	}
+	// import others
+	for _, imp := range prog.Imports {
+		dep, ok := depend[imp.File]
+		if !ok {
+			err = multierr.Append(err, fmt.Errorf("%s import %s, but not found %s", prog.File, imp.File, imp.File))
+			continue
+		}
+		pkg,ok := dep.Options.GetStringCheck(options.ProtoGoPkg)
+		if !ok {
+			err = multierr.Append(err, fmt.Errorf("%s import %s, but %s not set '%s' option", prog.File, imp.File, imp.File, options.ProtoGoPkg))
+			continue
+		} 
+		data.Import(pkg, "import others")
+	}
+	//
+	if err != nil {
+		return
 	}
 	// generate
 	buf, err := gengo.GenExec(data)

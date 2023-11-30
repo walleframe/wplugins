@@ -13,7 +13,6 @@ import (
 	"github.com/aggronmagi/wplugins/utils/plugin"
 )
 
-//
 func main() {
 	plugin.MainRoot(toProto)
 }
@@ -95,7 +94,7 @@ func toProto(rq *buildpb.BuildRQ) (rs *buildpb.BuildRS, err error) {
 			for _, field := range msg.Fields {
 				g.Doc(field.Doc)
 				typ, err = getTypeName(field.Type, lowercase)
-				g.P(typ, " ", g.Key(field.Name), " = ", field.No, ";")
+				g.P(typ, " ", g.Key(field.Name), " = ", field.No, ";", msg.Doc.GetTailDoc())
 			}
 
 			g.Out()

@@ -4,11 +4,13 @@ walle generate plugins
 打印插件接收的数据,用于插件开发调试期间。
 ** wpb
 生成go结构体及zap日志接口,兼容protobuf序列化。支持go基础类型（int8等）。
+[[./cmd/wpb/readme.org][说明文档]]
 ** wrpc 
 walle rpc 代码生成
 ** wredis 
 redis 操作代码生成
-** wmysql
+[[./cmd/wredis/readme.org][说明文档]]
+** TODO: wmysql
 mysql 操作代码生成
 * Deprecated
 

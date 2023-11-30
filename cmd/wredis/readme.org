@@ -1,0 +1,170 @@
+#+startup: content
+#+title: wredis插件文档
+* wredis文档
+** 约定及使用方式
+*** 约定
+ - *必须在消息级定义 ~redis.key~ option才会生成redis代码.*
+ - *生成redis操作的代码和操作的结构体不在一个包内.应该通过只有一个字段的message进行引用.*
+ - 同一个消息/key 只能定义一种数据类型,防止误操作.
+
+
+
+
+*** 使用
+以下全是消息级option定义.
+| options                 | value                          | desc                        |
+|-------------------------+--------------------------------+-----------------------------|
+| redis.key               | string                         | key 定义                    |
+| redis.keysize           | int                            | key 预估大小,默认64         |
+| redis.type              | string/hash/zset/list/set/lock |                             |
+| redis.protobuf          | true/false                     |                             |
+| redis.wproto            | true/false                     |                             |
+| redis.field/redis.value | key define                     | 详情见 hash/set/zset类型    |
+| redis.member            | string                         | redis-zet用来定义member拼接 |
+| redis.script.*          | string                         | 详情见 redis script         |
+
+~redis.type~ 定义的类型互斥. '!' 开头屏蔽redis keys 相关操作生成. 例: ~redis.key="!string"~
+
+*** 环境变量
+| 变量           | 默认值                                      |                                          |
+|----------------+---------------------------------------------+------------------------------------------|
+| WREDIS_PB_PKG  |                                             | 不为空,生成pb接口. 非空应该设置包路径    |
+| WREDIS_WPB_PKG | github.com/walleframe/walle/process/message | 不为空生成walle消息解析函数,非空为包路径 |
+| WREDIS_SVC_PKG | github.com/walleframe/svc_redis             | 不能为空,替换管理包                      |
+** key 定义
+默认使用 ~:~ 分隔key的每一个部分. 每个部分的字符必须是 ~a-z A-Z 0-9~.
+
+例: ~userdata:123~ 
+
+*** 时间戳 @time-func[op]
+使用 ~@~ 开头,后接获取时间戳函数.可以对时间进行 ~+~ / ~-~ / ~%~ 操作.
+
+支持的函数有:
+| function   | desc                              |
+|------------+-----------------------------------|
+| daystamp   | current day 00:00:00              |
+| weekstamp  | current week mondy 00:00:00       |
+| monthstamp | current month 1st 00:00:00        |
+| yearstamp  | current year January 1st 00:00:00 |
+
+例:
+#+begin_example
+u:login:@daystamp
+
+u:check:@month+3600:xx
+
+xx:@weestamp-1800:xx
+#+end_example
+
+*** 外部输入 go类型参数 $[arg-name=]go-type[op]
+使用 ~$~ 开头,可选的设置参数名称(影响生成代码).可以对数值进行 ~+~ / ~-~ / ~%~ 操作.
+支持go基础类型: ~int8, int16, int32, int64, uint8, uint16, uint32, uint64, float32, float64, bool, string~
+
+例:
+#+begin_example
+xx:$uint64:xxx
+
+xx:$uid=int64:xxx
+
+xx:$name=string:xx
+#+end_example
+
+** redis-string
+~redis.type = "string"~
+
+*** 空消息体,没有字段.
+ - 设置 ~WREDIS_PB_PKG~ 环境变量,在消息体级设置选项 ~redis.protobuf=true~ 将生成通用pb相关接口
+ - 设置 ~WREDIS_WPB_PKG~ 环境变量(默认已经设置),在消息体级设置选项 ~redis.wproto~ 将生成通用walle message相关接口
+ - 默认生成string类型接口
+
+*** 1个字段的结构体
+ - *不支持 bool/[]byte 类型*
+ - 数值类型,浮点类型,string类型,将生成对应类型get/set接口
+ - 自定义类型 默认认为结构体是walle message结构体.
+   通过设置 ~WREDIS_PB_PKG~ 环境变量和选项 ~redis.protobuf=true~ ,生成代码会认为结构体是protobuf message.
+
+*** 2个及2个以上的字段, *不支持*
+
+** redis-hash
+~redis.type = "hash"~
+*** 空消息体,没有字段. *不支持* 
+
+*** 1个字段的结构体. 仅支持自定义类型. 自定义类型的字段必须都是基础数据类型.
+生成hmget,hmset,hset,hget,hincr,hgetall等.
+*** 2个字段的结构体.
+ - 序号1 定义field类型,序号2 定义value类型. 支持scan操作.
+ - 序号1 field 类型仅支持基础类型
+   如果是float,bytes,不会生成返回map结构体接口.
+ - 序号2 value 类型支持基础数据类型和自定义结构体类型.
+**** field或value 的类型是string时,允许使用 redis.field/redis.value 对数据进行拼接.
+
+~redis.field/redis.value~ 消息级option. 值为redis-key定义中的go类型参数.
+
+例:
+#+begin_example
+redis.field = "$uid=int64:$sex=int8:$level=uint8"
+redis.value = "$level=uint8:"
+#+end_example
+
+只要有拼接数据存在,就不会生成返回map结构的接口.
+*** +3个字段结构体+ *不支持*
++第一个字段结构体, 第二三个字段配置 动态字段类型和动态value类型.+
++NOTE: 不生成hgetall接口+
+
+需要调整hvals,hfields,range等接口实现,有实际需求再弄.
+
+** redis-set
+*** 空消息体,没有字段.
+ - 设置 ~WREDIS_PB_PKG~ 环境变量,在消息体级设置选项 ~redis.protobuf=true~ 将生成通用pb相关接口
+ - 设置 ~WREDIS_WPB_PKG~ 环境变量(默认已经设置),在消息体级设置选项 ~redis.wproto~ 将生成通用walle message相关接口
+ - 默认生成string类型接口
+
+*** 1个字段的结构体
+ - *不支持 bool 类型*
+ - 未生成集合类型相关接口(有需要再加)
+ - 自定义类型 默认认为结构体是walle message结构体.
+   通过设置 ~WREDIS_PB_PKG~ 环境变量和选项 ~redis.protobuf=true~ ,生成代码会认为结构体是protobuf message.
+
+*** 2个及2个以上的字段, *不支持*
+
+** redis-zset
+- member*不支持 bool 类型*,score 仅支持有符号的数值和float类型.
+- member如果是自定义类型 默认认为结构体是walle message结构体.
+  通过设置 ~WREDIS_PB_PKG~ 环境变量和选项 ~redis.protobuf=true~ ,生成代码会认为结构体是protobuf message.
+- member 是string类型时候,支持通过 ~redis.member~ 进行拼接. 规则参考 ~redis.field~.
+*** 空消息体,没有字段. *不支持*
+
+*** 1个字段的结构体.
+  - filed 1 是member
+  - score 默认是 float64 类型
+
+*** 2个字段
+  - filed 1 是member
+  - field 2 是score.
+*** 3个及3个以上的字段, *不支持*
+** redis脚本 
+只支持生成对一个key进行操作的redis script相关代码. 同一个key(message)定义,可以添加多个脚本.
+
+定义一个redis script,必须设置3个选项:
+ 1. 以 ~redis.script.~ 开头
+ 2. 以 ~.lua~ 结尾,定义实际lua脚本数据.
+ 3. 以 ~.argv~ 结尾,定义脚本参数. 规则参考 ~redis.field~.
+ 4. 以 ~.reply~ 结尾, 定义脚本返回值. 规则参考 ~redis.field~.
+
+
+例如定义名为 ~operate_name~ 的脚本.
+#+begin_example
+redis.script.operate_name.lua = "lua script";
+redis.script.operate_name.argv = "$x1=int32:$x2=int8:$string";
+redis.script.operate_name.reply = "$count=int32";
+#+end_example
+
+脚本参数和脚本返回值必须设置不冲突的名称.
+
+** lock 分布式锁
+
+~redis.type = "lock"~
+
+** TODO: redis-bitmap 有需求再弄.  
+
+** NOTE: redis list/pubsub/stream/zpop 不封装在这个生成里面,之后会封成pipeline接口. 

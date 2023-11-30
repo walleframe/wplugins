@@ -5,7 +5,7 @@
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +14,12 @@
    limitations under the License.
 */
 package utils
+
+import (
+	"os"
+	"strconv"
+	"strings"
+)
 
 // 通用配置
 type walleCommonFlag struct {
@@ -36,4 +42,20 @@ func Debug() bool {
 
 func ShowDetail() bool {
 	return Flag.ShowDetail
+}
+
+func GetEnvBool(env string, val *bool) {
+	ev, ok := os.LookupEnv(env)
+	if !ok {
+		return
+	}
+	*val, _ = strconv.ParseBool(strings.ToLower(ev))
+}
+
+func GetEnvString(env string, val *string) {
+	ev, ok := os.LookupEnv(env)
+	if !ok {
+		return
+	}
+	*val = ev
 }
