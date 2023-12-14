@@ -18,6 +18,9 @@ func (x *TimeArg) Imports() []string {
 
 // 格式化代码
 func (x *TimeArg) FormatCode(obj string) (code string) {
+	if strings.HasSuffix(x.fun, "String") {
+		return fmt.Sprintf(`%s.WriteString(wtime.%s())`, obj, x.fun)
+	}
 	return fmt.Sprintf(`%s.WriteInt64(wtime.%s()%s)`, obj, x.fun, x.op)
 }
 
@@ -45,8 +48,28 @@ func (x TimeMatch) Match(st KeyStructer, k ArgIndex, arg string) (_ KeyArg, err 
 		fun = "MonthStamp"
 	case "yearstamp":
 		fun = "YearStamp"
+	case "curday":
+		fun = "CurDayString"
+	case "nextday":
+		fun = "NextDayString"
+	case "curweek":
+		fun = "CurWeekString"
+	case "nextweek":
+		fun = "NextWeekString"
+	case "curmonth":
+		fun = "CurMonthString"
+	case "nextmonth":
+		fun = "NextMonthString"
+	case "curyear":
+		fun = "CurYearString"
+	case "nextyear":
+		fun = "NextYearString"
 	default:
 		err = fmt.Errorf("[%s] is invalid wtime functions.", fun)
+		return
+	}
+	if strings.HasSuffix(fun, "String") && op != "" {
+		err = fmt.Errorf("arg:[%s] string format not support number operation", arg)
 		return
 	}
 	return &TimeArg{fun: fun, op: op}, nil

@@ -40,12 +40,20 @@
 使用 ~@~ 开头,后接获取时间戳函数.可以对时间进行 ~+~ / ~-~ / ~%~ 操作.
 
 支持的函数有:
-| function   | desc                              |
-|------------+-----------------------------------|
-| daystamp   | current day 00:00:00              |
-| weekstamp  | current week mondy 00:00:00       |
-| monthstamp | current month 1st 00:00:00        |
-| yearstamp  | current year January 1st 00:00:00 |
+| function   | type   | func                    | desc                                               |
+|------------+--------+-------------------------+----------------------------------------------------|
+| daystamp   | int64  | wtime.DayStamp()        | current day 00:00:00                               |
+| weekstamp  | int64  | wtime.WeekStamp()       | current week first day  00:00:00                   |
+| monthstamp | int64  | wtime.MonthStamp()      | current month 1st 00:00:00                         |
+| yearstamp  | int64  | wtime.YearStamp()       | current year January 1st 00:00:00                  |
+| curday     | string | wtime.CurDayString()    | current day, format '20060102'                     |
+| nextday    | string | wtime.NextDayString()   | next day, format '20060102'                        |
+| curweek    | string | wtime.CurWeekString()   | current week first day 00:00:00, format '20060102' |
+| nextweek   | string | wtime.NextWeekString()  | next week first day 00:00:00, format '20060102'    |
+| curmonth   | string | wtime.CurMonthString()  | current month 1st,format '200601'                  |
+| nextmonth  | string | wtime.NextMonthString() | next  month 1st,format '200601'                    |
+| curyear    | string | wTime.CurYearString()   |                                                    |
+| nextyear   | string | wtime.NextYearString()  |                                                    |
 
 例:
 #+begin_example

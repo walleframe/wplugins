@@ -4,7 +4,7 @@ func init(){
 	registerTemplate("redis_lock", `{{ $Name := .Name}} 
 func (x *x{{$Name}}) Lock(ctx context.Context, expiration time.Duration) (lockID string, err error) {
 	var cmd *redis.BoolCmd
-	lockID = uuid.NewString()
+	lockID = uuid.NewString() {{Import "github.com/google/uuid" "NewString"}}
 	switch expiration {
 	case 0:
 		// Use old 'SETNX' to support old Redis versions.
