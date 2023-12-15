@@ -278,8 +278,5 @@ func (c *w%[1]sClient) %[2]sAsync(ctx context.Context, rq *%[3]s,
 		File: strings.TrimSuffix(prog.File, filepath.Ext(prog.File)) + ".rpc.go",
 		Data: data,
 	})
-
-	log.Println(string(g.Buffer.Bytes()))
-
 	return
 }
