@@ -63,7 +63,6 @@ func generateWalleRPC(prog *buildpb.FileDesc, depend map[string]*buildpb.FileDes
 		for _, method := range svc.Methods {
 			g.Doc(method.Doc)
 			if method.Reply == nil {
-
 				g.Pf("%s(ctx network.SessionContext, rq* %s)(err error)",
 					g.Key(method.Name), g.Key(method.Request.Name),
 				)

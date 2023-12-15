@@ -27,7 +27,8 @@ func (gen *Generator) Doc(doc *buildpb.DocDesc) {
 	}
 
 	for _, v := range doc.Doc {
-		gen.P(v)
+		gen.BeginLine()
+		gen.Print(v)
 	}
 }
 
@@ -39,6 +40,7 @@ func (gen *Generator) LuaDoc(doc *buildpb.DocDesc) {
 	for _, v := range doc.Doc {
 		// if strings.HasPrefix(v, "/*")
 		v = "--" + strings.TrimPrefix(v, "//")
-		gen.P(v)
+		gen.BeginLine()
+		gen.Print(v)
 	}
 }
