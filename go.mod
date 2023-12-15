@@ -1,4 +1,4 @@
-module github.com/aggronmagi/wplugins
+module github.com/walleframe/wplugins
 
 go 1.17
 

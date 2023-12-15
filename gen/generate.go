@@ -30,7 +30,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aggronmagi/wplugins/utils"
+	"github.com/walleframe/wplugins/utils"
 	"golang.org/x/tools/imports"
 )
 

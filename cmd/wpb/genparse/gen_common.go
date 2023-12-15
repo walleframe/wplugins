@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aggronmagi/wplugins/buildpb"
-	"github.com/aggronmagi/wplugins/gen"
+	"github.com/walleframe/wplugins/buildpb"
+	"github.com/walleframe/wplugins/gen"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"

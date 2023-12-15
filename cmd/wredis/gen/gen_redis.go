@@ -9,11 +9,11 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/aggronmagi/wplugins/buildpb"
-	"github.com/aggronmagi/wplugins/cmd/wredis/keyarg"
-	"github.com/aggronmagi/wplugins/gen"
-	"github.com/aggronmagi/wplugins/options"
-	"github.com/aggronmagi/wplugins/utils"
+	"github.com/walleframe/wplugins/buildpb"
+	"github.com/walleframe/wplugins/cmd/wredis/keyarg"
+	"github.com/walleframe/wplugins/gen"
+	"github.com/walleframe/wplugins/options"
+	"github.com/walleframe/wplugins/utils"
 )
 
 var envFlag = struct {

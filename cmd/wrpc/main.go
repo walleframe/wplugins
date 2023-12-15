@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aggronmagi/wplugins/buildpb"
-	"github.com/aggronmagi/wplugins/gen"
-	"github.com/aggronmagi/wplugins/utils/plugin"
+	"github.com/walleframe/wplugins/buildpb"
+	"github.com/walleframe/wplugins/gen"
+	"github.com/walleframe/wplugins/utils/plugin"
 )
 
 func main() {
@@ -28,9 +28,9 @@ func generateWalleRPC(prog *buildpb.FileDesc, depend map[string]*buildpb.FileDes
 	g.P()
 	g.P("import (")
 	g.In()
-	g.P(`"github.com/aggronmagi/walle/network"`)
-	g.P(`"github.com/aggronmagi/walle/network/rpc"`)
-	g.P(`"github.com/aggronmagi/walle/process"`)
+	g.P(`"github.com/walleframe/walle/network"`)
+	g.P(`"github.com/walleframe/walle/network/rpc"`)
+	g.P(`"github.com/walleframe/walle/process"`)
 	g.P()
 	g.P(`"go.uber.org/zap/zapcore"`)
 	g.P()
@@ -278,6 +278,8 @@ func (c *w%[1]sClient) %[2]sAsync(ctx context.Context, rq *%[3]s,
 		File: strings.TrimSuffix(prog.File, filepath.Ext(prog.File)) + ".rpc.go",
 		Data: data,
 	})
+
+	log.Println(string(g.Buffer.Bytes()))
 
 	return
 }

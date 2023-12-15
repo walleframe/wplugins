@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aggronmagi/wplugins/buildpb"
+	"github.com/walleframe/wplugins/buildpb"
 	"go.uber.org/multierr"
 )
 

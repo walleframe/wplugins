@@ -4,7 +4,7 @@
 ** 环境变量
 | 变量               | 默认值                                     | 解释                                        |
 |--------------------+--------------------------------------------+---------------------------------------------|
-| GOPB_WIRE_PACKAGE  | github.com/aggronmagi/walle/util/protowire | 序列化代码使用的包,默认是从protobuf库复制的 |
+| GOPB_WIRE_PACKAGE  | github.com/walleframe/walle/util/protowire | 序列化代码使用的包,默认是从protobuf库复制的 |
 | GOPB_GEN_GET       | false                                      | 默认不生成get接口                           |
 | GOPB_GEN_ZAP       | true                                       | 默认生成zap日志接口                         |
 | GOPB_GEN_EMPTY_MSG | false                                      | 默认不生成空消息和空枚举类型                |

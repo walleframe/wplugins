@@ -3,9 +3,9 @@ package gen
 import (
 	"testing"
 
-	"github.com/aggronmagi/wplugins/buildpb"
-	"github.com/aggronmagi/wplugins/options"
 	"github.com/stretchr/testify/assert"
+	"github.com/walleframe/wplugins/buildpb"
+	"github.com/walleframe/wplugins/options"
 )
 
 func TestGenerateStringType(t *testing.T) {
@@ -13,7 +13,7 @@ func TestGenerateStringType(t *testing.T) {
 
 	runFunc := func(name string, msg *buildpb.MsgDesc, depend map[string]*buildpb.FileDesc) {
 		t.Run(name, func(t *testing.T) {
-			out, err := generateRedisMessage(&buildpb.FileDesc{
+			out, err := GenerateRedisMessage(&buildpb.FileDesc{
 				Pkg: &buildpb.PackageDesc{
 					Package: "pkg",
 				},
@@ -225,7 +225,7 @@ func TestGenerateHashType(t *testing.T) {
 
 	runFunc := func(name string, msg *buildpb.MsgDesc, depend map[string]*buildpb.FileDesc) {
 		t.Run(name, func(t *testing.T) {
-			out, err := generateRedisMessage(&buildpb.FileDesc{
+			out, err := GenerateRedisMessage(&buildpb.FileDesc{
 				Pkg: &buildpb.PackageDesc{
 					Package: "pkg",
 				},
@@ -713,7 +713,7 @@ func TestGenerateSetType(t *testing.T) {
 
 	runFunc := func(name string, msg *buildpb.MsgDesc, depend map[string]*buildpb.FileDesc) {
 		t.Run(name, func(t *testing.T) {
-			out, err := generateRedisMessage(&buildpb.FileDesc{
+			out, err := GenerateRedisMessage(&buildpb.FileDesc{
 				Pkg: &buildpb.PackageDesc{
 					Package: "pkg",
 				},
@@ -877,7 +877,7 @@ func TestGenerateZsetType(t *testing.T) {
 
 	runFunc := func(name string, msg *buildpb.MsgDesc, depend map[string]*buildpb.FileDesc) {
 		t.Run(name, func(t *testing.T) {
-			out, err := generateRedisMessage(&buildpb.FileDesc{
+			out, err := GenerateRedisMessage(&buildpb.FileDesc{
 				Pkg: &buildpb.PackageDesc{
 					Package: "pkg",
 				},

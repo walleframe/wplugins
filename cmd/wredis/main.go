@@ -3,10 +3,10 @@ package main
 import (
 	"log"
 
-	"github.com/aggronmagi/wplugins/buildpb"
-	"github.com/aggronmagi/wplugins/cmd/wredis/gen"
-	"github.com/aggronmagi/wplugins/options"
-	"github.com/aggronmagi/wplugins/utils/plugin"
+	"github.com/walleframe/wplugins/buildpb"
+	"github.com/walleframe/wplugins/cmd/wredis/gen"
+	"github.com/walleframe/wplugins/options"
+	"github.com/walleframe/wplugins/utils/plugin"
 )
 
 func main() {

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/aggronmagi/wplugins/buildpb"
-	"github.com/aggronmagi/wplugins/utils"
+	"github.com/walleframe/wplugins/buildpb"
+	"github.com/walleframe/wplugins/utils"
 )
 
 var UseFuncMap = template.FuncMap{}

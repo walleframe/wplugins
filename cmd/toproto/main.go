@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aggronmagi/wplugins/buildpb"
-	"github.com/aggronmagi/wplugins/gen"
-	"github.com/aggronmagi/wplugins/options"
-	"github.com/aggronmagi/wplugins/utils"
-	"github.com/aggronmagi/wplugins/utils/plugin"
+	"github.com/walleframe/wplugins/buildpb"
+	"github.com/walleframe/wplugins/gen"
+	"github.com/walleframe/wplugins/options"
+	"github.com/walleframe/wplugins/utils"
+	"github.com/walleframe/wplugins/utils/plugin"
 )
 
 func main() {

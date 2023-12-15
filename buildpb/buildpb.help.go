@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aggronmagi/wplugins/utils"
+	"github.com/walleframe/wplugins/utils"
 )
 
 func (x *OptionDesc) getOpt(opt string) (val *OptionValue) {

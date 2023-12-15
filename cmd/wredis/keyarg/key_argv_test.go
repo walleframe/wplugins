@@ -3,8 +3,8 @@ package keyarg
 import (
 	"testing"
 
-	"github.com/aggronmagi/wplugins/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/walleframe/wplugins/utils"
 )
 
 func TestMatchKey(t *testing.T) {

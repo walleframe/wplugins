@@ -3,7 +3,7 @@ package genparse
 import (
 	"log"
 
-	"github.com/aggronmagi/wplugins/cmd/wpb/gengo"
+	"github.com/walleframe/wplugins/cmd/wpb/gengo"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 

@@ -3,10 +3,10 @@ package genparse
 import (
 	"strings"
 
-	"github.com/aggronmagi/wplugins/buildpb"
-	"github.com/aggronmagi/wplugins/cmd/wpb/gengo"
-	"github.com/aggronmagi/wplugins/gen"
-	"github.com/aggronmagi/wplugins/options"
+	"github.com/walleframe/wplugins/buildpb"
+	"github.com/walleframe/wplugins/cmd/wpb/gengo"
+	"github.com/walleframe/wplugins/gen"
+	"github.com/walleframe/wplugins/options"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/reflect/protoreflect"

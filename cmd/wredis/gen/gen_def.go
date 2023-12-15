@@ -3,8 +3,8 @@ package gen
 import (
 	"strings"
 
-	"github.com/aggronmagi/wplugins/buildpb"
-	"github.com/aggronmagi/wplugins/cmd/wredis/keyarg"
+	"github.com/walleframe/wplugins/buildpb"
+	"github.com/walleframe/wplugins/cmd/wredis/keyarg"
 )
 
 // RedisObject 生成redis消息的对象

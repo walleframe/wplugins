@@ -7,13 +7,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aggronmagi/wplugins/buildpb"
-	"github.com/aggronmagi/wplugins/cmd/wpb/gengo"
-	"github.com/aggronmagi/wplugins/cmd/wpb/genparse"
-	"github.com/aggronmagi/wplugins/gen"
-	"github.com/aggronmagi/wplugins/options"
-	"github.com/aggronmagi/wplugins/utils"
-	"github.com/aggronmagi/wplugins/utils/plugin"
+	"github.com/walleframe/wplugins/buildpb"
+	"github.com/walleframe/wplugins/cmd/wpb/gengo"
+	"github.com/walleframe/wplugins/cmd/wpb/genparse"
+	"github.com/walleframe/wplugins/gen"
+	"github.com/walleframe/wplugins/options"
+	"github.com/walleframe/wplugins/utils"
+	"github.com/walleframe/wplugins/utils/plugin"
 	"go.uber.org/multierr"
 )
 
@@ -111,11 +111,11 @@ func generateWalleProrobuf(prog *buildpb.FileDesc, depend map[string]*buildpb.Fi
 			err = multierr.Append(err, fmt.Errorf("%s import %s, but not found %s", prog.File, imp.File, imp.File))
 			continue
 		}
-		pkg,ok := dep.Options.GetStringCheck(options.ProtoGoPkg)
+		pkg, ok := dep.Options.GetStringCheck(options.ProtoGoPkg)
 		if !ok {
 			err = multierr.Append(err, fmt.Errorf("%s import %s, but %s not set '%s' option", prog.File, imp.File, imp.File, options.ProtoGoPkg))
 			continue
-		} 
+		}
 		data.Import(pkg, "import others")
 	}
 	//
