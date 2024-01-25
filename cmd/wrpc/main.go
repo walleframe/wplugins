@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	plugin.MainOneByOne(generateWalleRPC)
+	plugin.MainRangeFile(nil, generateWalleRPC)
 }
 
 func generateWalleRPC(prog *buildpb.FileDesc, depend map[string]*buildpb.FileDesc) (out []*buildpb.BuildOutput, err error) {

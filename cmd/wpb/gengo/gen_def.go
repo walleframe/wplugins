@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/walleframe/wplugins/buildpb"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -118,6 +119,7 @@ type GenerateField struct {
 	IsMap  bool
 	IsList bool
 	Kind   protoreflect.Kind
+	WType *buildpb.TypeDesc
 
 	// marshal 辅助
 	CheckNotEmpty func(vname string) string // 检测是否为空的条件. 是否需要序列化

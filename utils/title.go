@@ -7,6 +7,11 @@ import (
 )
 
 func Title(in string) (out string) {
+	if strings.Contains(in, ".") {
+		list := strings.Split(in, ".")
+		list[len(list)-1] = Title(list[len(list)-1])
+		return strings.Join(list, ".")
+	}
 	list := strings.Split(in, "_")
 	for _, v := range list {
 		out += strings.Title(v)

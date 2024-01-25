@@ -135,6 +135,7 @@ func parseMessageField(msg *gengo.GenerateMessage, g *gen.Generator, m *buildpb.
 	genField.IsList = field.IsList()
 	genField.IsMap = field.IsMap()
 	genField.Kind = switchProtoKind(field)
+	genField.WType = field.Type
 
 	// 序列化
 	switch {

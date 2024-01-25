@@ -41,7 +41,7 @@ func (x {{ .TypeName }}) String() string {
 
 {{ range .Messages }} {{ $msg := .}}
 
-{{ .LeadingComments }} type {{.TypeName}} struct { {{ range $i,$field := .Fields }} {{ $tag:= $field.AddTag "json" ""}}
+{{ .LeadingComments }} type {{.TypeName}} struct { {{ range $i,$field := .Fields }} {{ $tag:= $field.AddTag "json" ""}} {{ $tag:= $field.AddTag "db" ""}}
 	{{ $field.LeadingComments }} {{ $field.GoName }} {{ $field.TypeName }} {{ $field.Tags }} {{ $field.TrailingComment }} {{ end }}
 }
 func (x *{{.TypeName}}) Reset() {

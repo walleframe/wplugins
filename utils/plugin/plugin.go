@@ -88,8 +88,9 @@ func MainRoot(gen func(rq *buildpb.BuildRQ) (rs *buildpb.BuildRS, err error)) {
 	}
 }
 
-// MainOneByOne 单个接口
-func MainOneByOne(gf func(prog *buildpb.FileDesc, depend map[string]*buildpb.FileDesc) (out []*buildpb.BuildOutput, err error)) {
+// MainRangeFile 单个接口
+func MainRangeFile(filter func(file *buildpb.FileDesc) bool,
+	gf func(prog *buildpb.FileDesc, depend map[string]*buildpb.FileDesc) (out []*buildpb.BuildOutput, err error)) {
 	MainRoot(func(rq *buildpb.BuildRQ) (rs *buildpb.BuildRS, err error) {
 		rs = &buildpb.BuildRS{}
 		for _, file := range rq.Files {
@@ -109,5 +110,51 @@ func MainOneByOne(gf func(prog *buildpb.FileDesc, depend map[string]*buildpb.Fil
 		}
 		return
 	})
+	return
+}
+
+// MainOneByOne 单个接口
+func MainRangeMessage(filter func(file *buildpb.FileDesc) bool, filterMsg func(msg *buildpb.MsgDesc) bool,
+	gf func(msg *buildpb.MsgDesc, prog *buildpb.FileDesc, depend map[string]*buildpb.FileDesc) (out []*buildpb.BuildOutput, err error)) {
+	MainRoot(func(rq *buildpb.BuildRQ) (rs *buildpb.BuildRS, err error) {
+		rs = &buildpb.BuildRS{}
+		for _, file := range rq.Files {
+			fdesc, ok := rq.Programs[file]
+			if !ok {
+				err = fmt.Errorf("%s not exists", file)
+				return
+			}
+			for _, msg := range fdesc.Msgs {
+				one, err := rangeMsg(msg, fdesc, rq.Programs, gf)
+				if err != nil {
+					return rs, err
+				}
+				if one == nil {
+					continue
+				}
+				rs.Result = append(rs.Result, one...)
+			}
+		}
+		return
+	})
+}
+
+func rangeMsg(msg *buildpb.MsgDesc, prog *buildpb.FileDesc, depend map[string]*buildpb.FileDesc,
+	gf func(msg *buildpb.MsgDesc, prog *buildpb.FileDesc, depend map[string]*buildpb.FileDesc) (out []*buildpb.BuildOutput, err error),
+) (out []*buildpb.BuildOutput, err error) {
+	out, err = gf(msg, prog, depend)
+	if err != nil {
+		return nil, err
+	}
+	for _, sub := range msg.SubMsgs {
+		o2, err2 := gf(sub, prog, depend)
+		if err2 != nil {
+			return nil, err2
+		}
+		if o2 == nil {
+			continue
+		}
+		out = append(out, o2...)
+	}
 	return
 }

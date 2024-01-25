@@ -1,32 +1,19 @@
 package genparse
 
 import (
+	"fmt"
 	"log"
+	"strings"
 
+	"github.com/walleframe/wplugins/buildpb"
 	"github.com/walleframe/wplugins/cmd/wpb/gengo"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 var genzapTemplate = `
-func (x *{{.GoName}}) MarshalLogObject(enc zapcore.ObjectEncoder) error { 
-	{{- $i := Import "go.uber.org/zap/zapcore" "ObjectEncoder" -}} 
-	{{- range $i,$field := .Fields }} {{if $field.IsMap -}} 
-	{{- $import := ZapImport $field.MapKey -}} 
-	{{- if $import}} {{$i := Import "strconv" "FormatInt"}} {{end }}
-	enc.AddObject("{{$field.GoName}}", zapcore.ObjectMarshalerFunc(func(oe zapcore.ObjectEncoder) error {
-		for k,v := range x.{{$field.GoName}} {
-			oe.Add{{ZapFieldFunc $field.MapValue}}({{ZapMapKey $field.MapKey}}, v{{ZapFieldMethod $field.MapValue}})
-		}
-		return nil
-	})){{else if $field.IsList }}
-	enc.AddArray("{{$field.GoName}}", zapcore.ArrayMarshalerFunc(func(ae zapcore.ArrayEncoder) error { 
-		for _,v := range x.{{$field.GoName}} { {{$fname := ZapFieldFunc $field}} {{if eq $fname "Binary"}} {{$_ := Import "encoding/base64" "encode"}}
-			ae.AppendString(base64.StdEncoding.EncodeToString(v{{ZapFieldMethod $field}})) {{else}}
-			ae.Append{{$fname}}(v{{ZapFieldMethod $field}}) {{end}}
-		}
-		return nil 
-	})){{else}}
-	enc.Add{{ZapFieldFunc $field}}("{{$field.GoName}}", x.{{$field.GoName}}{{ZapFieldMethod $field}}){{end}}{{end}}
+{{ $i := Import "go.uber.org/zap/zapcore" "ObjectEncoder" }} {{$i := Import "strconv" "FormatInt"}} {{$_ := Import "encoding/base64" "encode"}}
+func (x *{{.GoName}}) MarshalLogObject(enc zapcore.ObjectEncoder) error { {{- range $i,$field := .Fields }}
+	{{ZapFieldGen $field}}{{end}}
 	return nil 
 }
 
@@ -47,12 +34,100 @@ func init() {
 	gengo.RegisterCustomModule(&gengo.CustomModule{
 		Templates: [][2]string{{"genzap", genzapTemplate}},
 		Funcs: map[string]interface{}{
-			"ZapFieldFunc":   getZapFieldFunc,
-			"ZapFieldMethod": getZapMethod,
-			"ZapMapKey":      getZaoFieldMapKey,
-			"ZapImport":      getZaoImprtConv,
+			"ZapFieldGen": genZapField,
 		},
 	})
+}
+
+func genZapField(field *gengo.GenerateField) (_ string) {
+	typ := field.WType
+	switch typ.Type {
+	case buildpb.FieldType_BaseType:
+		return fmt.Sprintf(`enc.Add%s("%s", x.%s)`, getZapBaseTypeFunc(field), field.DescName, field.GoName)
+	case buildpb.FieldType_CustomType:
+		return fmt.Sprintf(`enc.AddObject("%s", x.%s)`, field.DescName, field.GoName)
+	case buildpb.FieldType_ListType:
+		if typ.ElemCustom {
+			return fmt.Sprintf(`enc.AddArray("%s", x.%s)`, field.DescName, field.GoName)
+		}
+		return fmt.Sprintf(
+			`enc.AddArray("%s", zapcore.ArrayMarshalerFunc(func(ae zapcore.ArrayEncoder) error {
+	for _,v := range x.%s {
+		ae.Append%s
+	}
+	return nil 
+}))`, field.DescName, field.GoName, getZapArrayFunc(field))
+	case buildpb.FieldType_MapType:
+		return fmt.Sprintf(`enc.AddObject("%s", zapcore.ObjectMarshalerFunc(func(oe zapcore.ObjectEncoder) error {
+	for k,v := range x.%s {
+		oe.Add%s
+	}
+	return nil 
+}))`, field.DescName, field.GoName, getZapMapFunc(field))
+	}
+	return
+}
+
+func getZapBaseTypeFunc(field *gengo.GenerateField) (f string) {
+	switch field.GoType {
+	case "[]byte":
+		return "Binary"
+	default:
+		return strings.Title(field.GoType)
+	}
+}
+
+func getZapArrayFunc(field *gengo.GenerateField) (f string) {
+	switch field.GoType {
+	case "[]byte":
+		return "String(base64.StdEncoding.EncodeToString(v))"
+	default:
+		return strings.Title(field.GoType) + "(v)"
+	}
+}
+
+func getZapMapFunc(field *gengo.GenerateField) (f string) {
+	typ := field.WType
+	if typ.ElemCustom {
+		return fmt.Sprintf(`Object(%s, v)`, typMapKey(typ.KeyBase, "k"))
+	}
+	return fmt.Sprintf(`%s(%s, %s)`, getZapBaseTypeFunc(field), typMapKey(typ.KeyBase, "k"), getZapMapValue(field))
+}
+
+func getZapMapValue(field *gengo.GenerateField) (f string) {
+	switch field.GoType {
+	case "[]byte":
+		return "base64.StdEncoding.EncodeToString(v)"
+	default:
+		return "v"
+	}
+}
+
+
+func typMapKey(typ buildpb.BaseTypeDesc, k string) (tf string) {
+	switch typ {
+	case buildpb.BaseTypeDesc_String:
+		tf = k
+	case buildpb.BaseTypeDesc_Binary:
+		tf = k
+	case buildpb.BaseTypeDesc_Int8, buildpb.BaseTypeDesc_Int16,
+		buildpb.BaseTypeDesc_Int32:
+		tf = fmt.Sprintf("strconv.FormatInt(int64(%s), 10)", k)
+	case buildpb.BaseTypeDesc_Uint8, buildpb.BaseTypeDesc_Uint16,
+		buildpb.BaseTypeDesc_Uint32:
+		tf = fmt.Sprintf("strconv.FormatUint(uint64(%s), 10)", k)
+	case buildpb.BaseTypeDesc_Int64:
+		tf = fmt.Sprintf("strconv.FormatInt(%s, 10)", k)
+	case buildpb.BaseTypeDesc_Uint64:
+		tf = fmt.Sprintf("strconv.FormatUint(%s, 10)", k)
+	case buildpb.BaseTypeDesc_Float32:
+		tf = fmt.Sprintf("strconv.FormatFloat(%s, 'f', -1, 32)", k)
+	case buildpb.BaseTypeDesc_Float64:
+		tf = fmt.Sprintf("strconv.FormatFloat(%s, 'f', -1, 64)", k)
+	case buildpb.BaseTypeDesc_Bool:
+		tf = fmt.Sprintf("strconv.FormatBool(%s)", k)
+	}
+	return
 }
 
 func getZaoImprtConv(field *gengo.GenerateField) (isImport bool) {

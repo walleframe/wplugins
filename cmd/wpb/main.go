@@ -15,6 +15,7 @@ import (
 	"github.com/walleframe/wplugins/utils"
 	"github.com/walleframe/wplugins/utils/plugin"
 	"go.uber.org/multierr"
+	"google.golang.org/protobuf/proto"
 )
 
 var GenerateEmptyMessage = false
@@ -28,7 +29,7 @@ func init() {
 }
 
 func main() {
-	plugin.MainOneByOne(generateWalleProrobuf)
+	plugin.MainRangeFile(nil, generateWalleProrobuf)
 }
 
 func generateWalleProrobuf(prog *buildpb.FileDesc, depend map[string]*buildpb.FileDesc) (out []*buildpb.BuildOutput, err error) {
@@ -83,19 +84,53 @@ func generateWalleProrobuf(prog *buildpb.FileDesc, depend map[string]*buildpb.Fi
 		genCount++
 	}
 
+	genDB := prog.HasOption(options.SqlDBName)
+
 	for _, m := range prog.Msgs {
 		err = multierr.Append(err, genparse.ParseMessage(data, g, m, func(m *buildpb.MsgDesc) bool {
 			// 默认不生成空消息
 			if GenerateEmptyMessage == false && len(m.Fields) < 1 {
 				return false
 			}
-			// 过滤不生成redis/mysql定义消息 - 无意义
-			if m.HasOption(options.RedisOpKey) || m.HasOption(options.SqlTableName) {
+			// 过滤不生成redis定义消息 - 无意义
+			if m.HasOption(options.RedisOpKey) {
 				return false
 			}
 			genCount++
 			return true
 		}))
+		// sql 额外生成一个Ex消息,附带 modify_stamp,create_stamp
+		if genDB && !m.HasOption(options.SqlIgnore) {
+			No := int32(len(m.Fields))
+			sqlEx := proto.Clone(m).(*buildpb.MsgDesc)
+			sqlEx.Name += "_ex"
+			sqlEx.Doc = &buildpb.DocDesc{
+				Doc: []string{"// sql row extern data"},
+			}
+			sqlEx.Fields = append(sqlEx.Fields,
+				&buildpb.Field{
+					Type: &buildpb.TypeDesc{
+						Type:    buildpb.FieldType_BaseType,
+						Key:     "int64",
+						KeyBase: buildpb.BaseTypeDesc_Int64,
+					},
+					Name: "modify_stamp",
+					No:   No + 1,
+				},
+				&buildpb.Field{
+					Type: &buildpb.TypeDesc{
+						Type:    buildpb.FieldType_BaseType,
+						Key:     "int64",
+						KeyBase: buildpb.BaseTypeDesc_Int64,
+					},
+					Name: "create_stamp",
+					No:   No + 2,
+				},
+			)
+			err = multierr.Append(err, genparse.ParseMessage(data, g, sqlEx, func(m *buildpb.MsgDesc) bool {
+				return true
+			}))
+		}
 	}
 	if err != nil {
 		return

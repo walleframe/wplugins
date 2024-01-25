@@ -35,5 +35,17 @@ const (
 
 // mysql key
 const (
-	SqlTableName = "sql.tbl_name"
+	SqlDBName        = "sql.db"
+	SqlIgnore        = "sql.ignore"
+	SqlEngine        = "sql.engine"
+	SqlTableName     = "sql.tbl_name"
+	SqlPrimaryKey    = "sql.pk"
+	SqlPrimaryKey2   = "sql.primary_key"
+	SqlAutoIncrement = "sql.auto_incr"
+	SqlFieldType     = "sql.type"
+	SqlSize          = "sql.size"
+	SqlNull          = "sql.null"
+	SqlCustomSet     = "sql.custom"
+	SqlIndexPrefix   = "sql.index."
+	SqlUniquePrefix  = "sql.unique."
 )

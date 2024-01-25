@@ -8,7 +8,7 @@ import (
 	"github.com/walleframe/wplugins/utils"
 )
 
-func (x *OptionDesc) getOpt(opt string) (val *OptionValue) {
+func (x *OptionDesc) GetOpt(opt string) (val *OptionValue) {
 	if x == nil || x.Options == nil || len(x.Options) < 1 {
 		return nil
 	}
@@ -27,11 +27,11 @@ func (x *OptionDesc) RangeOptions(prefix string, rf func(opt *OptionValue) bool)
 }
 
 func (x *OptionDesc) HasOption(opt string) (ok bool) {
-	return x.getOpt(opt) != nil
+	return x.GetOpt(opt) != nil
 }
 
 func (x *OptionDesc) GetOptionBool(opt string) (ok bool) {
-	v := x.getOpt(opt)
+	v := x.GetOpt(opt)
 	if v == nil {
 		return
 	}
@@ -42,7 +42,7 @@ func (x *OptionDesc) GetOptionBool(opt string) (ok bool) {
 	return v.IntValue != 0
 }
 func (x *OptionDesc) GetStringCheck(opt string) (val string, ok bool) {
-	v := x.getOpt(opt)
+	v := x.GetOpt(opt)
 	if v == nil {
 		return
 	}
@@ -59,7 +59,7 @@ func (x *OptionDesc) GetStringCheck(opt string) (val string, ok bool) {
 	return
 }
 func (x *OptionDesc) GetString(opt, def string) string {
-	v := x.getOpt(opt)
+	v := x.GetOpt(opt)
 	if v == nil {
 		return def
 	}
@@ -67,7 +67,7 @@ func (x *OptionDesc) GetString(opt, def string) string {
 	return v.Value
 }
 func (x *OptionDesc) GetStringSlice(opt, sep string, def ...string) (slice []string, ok bool) {
-	v := x.getOpt(opt)
+	v := x.GetOpt(opt)
 	if v == nil {
 		slice = def
 		return
@@ -82,7 +82,7 @@ func (x *OptionDesc) GetStringSlice(opt, sep string, def ...string) (slice []str
 	return
 }
 func (x *OptionDesc) GetIntCheck(opt string) (val int64, ok bool) {
-	v := x.getOpt(opt)
+	v := x.GetOpt(opt)
 	if v == nil {
 		return
 	}
@@ -94,7 +94,7 @@ func (x *OptionDesc) GetIntCheck(opt string) (val int64, ok bool) {
 	return
 }
 func (x *OptionDesc) GetInt64(opt string, def int64) (val int64) {
-	v := x.getOpt(opt)
+	v := x.GetOpt(opt)
 	if v == nil {
 		return def
 	}

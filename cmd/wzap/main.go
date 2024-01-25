@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	plugin.MainOneByOne(generateWalleZapLog)
+	plugin.MainRangeFile(nil, generateWalleZapLog)
 }
 
 func generateWalleZapLog(prog *buildpb.FileDesc, depend map[string]*buildpb.FileDesc) (out []*buildpb.BuildOutput, err error) {
@@ -99,7 +99,7 @@ func generateWalleZapLog(prog *buildpb.FileDesc, depend map[string]*buildpb.File
 						pkg = pl[0] + "."
 						stName = g.Key(pl[1])
 					}
-					g.Pf(`oe.AddObject(%s, %s%s(x.%s))`, typMapKey(typ.KeyBase, "k"), pkg, stName, fname)
+					g.Pf(`oe.AddObject(%s, %s%s(v.%s))`, typMapKey(typ.KeyBase, "k"), pkg, stName, fname)
 				} else {
 					tf, err := typFuncName(typ.ValueBase)
 					if err != nil {

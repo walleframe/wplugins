@@ -1,0 +1,98 @@
+#+startup: content
+#+title: wdb插件文档
+* wdb文档
+** 约定及使用方式
+当前只做了mysql生成.
+*** 约定
+ - *必须在文件级定义 ~sql.db~ option才会生成db代码.*.
+ - *使用包名作为数据库配置名,默认生成的操作代码目录为 pkg/dbop/包名,可以通过 ~WDB_OPCODE_PATH~ 修改*
+ - *定义了 ~sql.tbl_name~ option 会自动生成名为 `消息名Ex`的消息体(含数据条目创建时间和最后一次修改时间)*
+*** 使用
+| level  | options         | value  | desc                                       |
+|--------+-----------------+--------+--------------------------------------------|
+| 文件级 |                 |        |                                            |
+|        | sql.db          | string | 此文件定义的表归属于哪个数据库             |
+| 消息级 |                 |        |                                            |
+|        | sql.tbl_name    | string | string类型的值会作为实际sql的表名          |
+|        | sql.ignore      | bool   | 标识message不是sql表.                      |
+|        | sql.pk          | string | 设置primary key,值为以','分隔的字段名称    |
+|        | sql.primary_key | string | 同 sql.pk                                  |
+|        | sql.index.*     | string | 普通索引,值为以','分隔的字段名称           |
+|        | sql.unique.*    | string | unique索引,值为以','分隔的字段名称         |
+|        | sql.engine      | string | mysql engine                               |
+| 字段级 |                 |        |                                            |
+|        | sql.pk          | bool   | 设置本字段是primary key.                   |
+|        | sql.primary_key | bool   | 同 sql.pk                                  |
+|        | sql.auto_incr   | bool   | 设置字段自增,仅能在一个int类型的字段上设置 |
+|        | sql.type        | string | 设置mysql类型,会忽略 sql.size,sql.null     |
+|        | sql.size        | int    | 对string类型设置长度,varchar(size)         |
+|        | sql.null        | bool   | 字段可以为null,默认所有字段NOT NULL        |
+|        | sql.custom      | bool   | 对本字段,自定义序列化和反序列化函数        |
+
+~sql.pk~ 优先使用消息级配置的字段列表数据.
+
+关于索引,看下面具体章节的介绍.
+
+生成代码中以下接口使用 sql.Stmt. 批量接口和其余接口都是拼接sql.
+ - insert
+ - update
+ - upsert
+ - find
+ - delete
+
+
+表自动同步:
+#+begin_quote
+生成代码默认会在服务启动时候,检测表和索引.
+#+end_quote
+ - 检测数据库内表是否存在,不存在则创建. 如果表已经存在,会检查字段,如果有新增字段,自动添加缺失的字段.
+ - 检测数据库内表所关联的索引是否存在,不存在则创建.
+
+
+只有设置了Primary Key字段, 才会生成update,upsert,find 相关方法.否则可以使用select配合where使用进行查询,使用insert 进行更新.
+ 
+生成代码对外暴露了 ~*sqlx.DB~ 指针,可以自定义执行的sql.
+
+生成代码还包含了一个简单的sql语句生成,例:
+#+begin_src go
+  db_user.UserInfoNamedSQL(128).Insert().Uid().Email().Name().ToSQL() // insert user_info(`uid`,`email`,`name`) values(:uid,:email,:name)
+	db_user.UserInfoNamedSQL(128).Delete().Email().And().Name().ToSQL() // delete user_info where `email` = :email and `name` = :name
+	db_user.UserInfoNamedSQL(128).Update().Name().Email().Where().Uid().ToSQL() // update user_info set `name`=:name,`email`=:email where `uid` = :uid
+	db_user.UserInfoNamedSQL(128).Select().Uid().Name().Where().Uid().And().Email().Limit(10, 0).ToSQL() //select `uid`,`name` from user_info where `uid` = :uid and `email` = :email limit 10,0
+#+end_src
+ 
+*** 环境变量
+| 环境变量        | 默认值                       |                          |
+|-----------------+------------------------------+--------------------------|
+| WDB_SVC_PKG     | github.com/walleframe/svc_db | 不能为空,替换管理包      |
+| WDB_OPCODE_PATH | pkg/dbop/                    | 生成的数据库操作代码目录 |
+| WDB_CHARSET     | utf8mb4                      | 表和数据库的字符集       |
+| WDB_COLLATE     | utf8mb4_general_ci           | 表和数据库               |
+
+** 字段类型
+| wproto类型  | sql类型         |
+|-------------+-----------------|
+| int8        | tinyint         |
+| int16,int32 | int             |
+| int64       | bigint          |
+| uint64      | bigint unsigned |
+| string      | varchar(64)     |
+| []byte      | blob            |
+
+
+除了上表的sql类型,还支持 ~timestamp~ 类型. 需要通过 ~sql.type~ 指定.
+
+例:
+#+begin_example
+sql.type = "timestamp default current_timestamp on update current_timestamp"
+sql.type = "timestamp default current_timestamp"
+#+end_example
+
+数组,字典,自定义类型 对应的sql类型都是 ~varchar(256)~. 可以通过 ~sql.size~ 修改长度. 默认使用json进行序列化和反序列化.
+
+通过包内提供的字段级函数变量进行调整.
+
+基础类型默认不提供序列化方法的修改.可以通过 ~sql.custom~ 选项,来生成修改方法.
+
+
+
