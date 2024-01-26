@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 
 	"github.com/walleframe/wplugins/buildpb"
@@ -318,5 +319,8 @@ func ParseSqlTableColumns(msg *buildpb.MsgDesc, tbl *SqlTable) (err error) {
 
 		tbl.Index = append(tbl.Index, x)
 	}
+	sort.Slice(tbl.Index, func(i, j int) bool {
+		return tbl.Index[i].Name < tbl.Index[j].Name
+	})
 	return
 }
