@@ -53,13 +53,17 @@
  
 生成代码对外暴露了 ~*sqlx.DB~ 指针,可以自定义执行的sql.
 
-生成代码还包含了一个简单的sql语句生成,例:
+生成代码还包含了一个简单的sql语句生成(会根据调用顺序生成sql语句,应该像正常写sql那样去调用),例:
 #+begin_src go
   db_user.UserInfoNamedSQL(128).Insert().Uid().Email().Name().ToSQL() // insert user_info(`uid`,`email`,`name`) values(:uid,:email,:name)
 	db_user.UserInfoNamedSQL(128).Delete().Email().And().Name().ToSQL() // delete user_info where `email` = :email and `name` = :name
 	db_user.UserInfoNamedSQL(128).Update().Name().Email().Where().Uid().ToSQL() // update user_info set `name`=:name,`email`=:email where `uid` = :uid
 	db_user.UserInfoNamedSQL(128).Select().Uid().Name().Where().Uid().And().Email().Limit(10, 0).ToSQL() //select `uid`,`name` from user_info where `uid` = :uid and `email` = :email limit 10,0
+
+  // 错误的示例(ERROR EXAMPLE):
+  db_user.UserInfoNamedSQL(128).Update().Email().Where().And().Email().ToSQL() => update user_info set `email`=:email where  and `email` = :email
 #+end_src
+
  
 *** 环境变量
 | 环境变量        | 默认值                       |                          |
@@ -94,5 +98,11 @@ sql.type = "timestamp default current_timestamp"
 
 基础类型默认不提供序列化方法的修改.可以通过 ~sql.custom~ 选项,来生成修改方法.
 
-
-
+** 示例
+*** 用户信息表
+auto incr, primary key 
+*** 邮件列表
+primary key
+index 
+*** 操作日志
+log 

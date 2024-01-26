@@ -76,16 +76,12 @@ var (
 )
 
 func init() {
+	{{$tbl.SvcDB}}.RegisterSyncDBTable("mysql", "{{$tbl.DB}}", "{{$tbl.SqlTable}}", Sync{{Title $tbl.Name}}DBTable)
 	{{$tbl.SvcDB}}.RegisterDB("mysql", "{{$tbl.DB}}", "{{$tbl.SqlTable}}", func(db *sqlx.DB) error {
-		// sync table columns
-		err := {{$tbl.SvcDB}}.SyncTableColumns(context.Background(), db, "{{$tbl.SqlTable}}", {{Title $tbl.Name}}SQL_Create, {{Title $tbl.Name}}SQL_TableColumns)
+		//
+		err := Sync{{Title $tbl.Name}}DBTable(context.Background(), db)
 		if err != nil {
-			return fmt.Errorf("swap {{$tbl.DB}}.{{$tbl.SqlTable}} pointer, sync columns failed, %w", err)
-		}
-		// sync table index
-		err = {{$tbl.SvcDB}}.SyncTableIndex(context.Background(), db, "{{$tbl.SqlTable}}", {{Title $tbl.Name}}SQL_TableIndex)
-		if err != nil {
-			return fmt.Errorf("swap {{$tbl.DB}}.{{$tbl.SqlTable}} pointer, sync index failed, %w", err)
+			return fmt.Errorf("swap {{$tbl.DB}}.{{$tbl.SqlTable}} pointer, %w", err)
 		}
 		//
 		tableOP, err := New{{Title $tbl.Name}}Operation(db)
@@ -106,6 +102,21 @@ func {{Title $tbl.Name}}NamedSQL(bufSize int)  *{{Title $tbl.Name}}SQLWriter{
 	sql := &{{Title $tbl.Name}}SQLWriter{}
 	sql.buf.Grow(bufSize)
 	return sql
+}
+
+
+func Sync{{Title $tbl.Name}}DBTable(ctx context.Context, db *sqlx.DB) (err error) {
+	// sync table columns
+	err = {{$tbl.SvcDB}}.SyncTableColumns(context.Background(), db, "{{$tbl.SqlTable}}", {{Title $tbl.Name}}SQL_Create, {{Title $tbl.Name}}SQL_TableColumns)
+	if err != nil {
+		return fmt.Errorf("sync {{$tbl.DB}}.{{$tbl.SqlTable}} table, sync columns failed, %w", err)
+	}
+	// sync table index
+	err = {{$tbl.SvcDB}}.SyncTableIndex(context.Background(), db, "{{$tbl.SqlTable}}", {{Title $tbl.Name}}SQL_TableIndex)
+	if err != nil {
+		return fmt.Errorf("sync {{$tbl.DB}}.{{$tbl.SqlTable}} table, sync index failed, %w", err)
+	}
+	return
 }
 
 {{if $tbl.PrimaryKey }} 
@@ -138,17 +149,17 @@ func {{Title $tbl.Name}}ExToPrimaryKeysEx(rows []*{{Title $tbl.Struct}}Ex) (ids 
 const (
 	{{Title $tbl.Name}}SQL_Insert        = "insert {{$tbl.SqlTable}}({{range $i,$col := $tbl.AllColumns true}}{{Comma $i}}{{$col.SqlName}}{{end}}) values({{$tbl.Placeholder true}})"{{ if $tbl.AutoIncr}}
 	{{Title $tbl.Name}}SQL_Insert2       = "insert {{$tbl.SqlTable}}({{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}}) values({{$tbl.Placeholder false}})"{{end}}
-	{{Title $tbl.Name}}SQL_InsertValues  = ",values({{$tbl.Placeholder true}})"
-	{{Title $tbl.Name}}SQL_InsertValues2 = ",values({{$tbl.Placeholder false}})" {{if $tbl.PrimaryKey}}
-	{{Title $tbl.Name}}SQL_Where1         = " where ({{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.SqlName}}=?{{end}})"
-	{{Title $tbl.Name}}SQL_Where2         = " or ({{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.SqlName}}=?{{end}})"
+	{{Title $tbl.Name}}SQL_InsertValues  = ",({{$tbl.Placeholder true}})"
+	{{Title $tbl.Name}}SQL_InsertValues2 = ",({{$tbl.Placeholder false}})" {{if $tbl.PrimaryKey}}
+	{{Title $tbl.Name}}SQL_Where1        = " where ({{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.SqlName}}=?{{end}})"
+	{{Title $tbl.Name}}SQL_Where2        = " or ({{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.SqlName}}=?{{end}})"
 	{{Title $tbl.Name}}SQL_Upsert        = "insert {{$tbl.SqlTable}}({{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}}) values({{$tbl.Placeholder false}})"
 	{{Title $tbl.Name}}SQL_UpsertUpdate  = " on duplicate key update {{range $i,$col := $tbl.AllColumns true}}{{Comma $i}}{{$col.SqlName}}=values({{$col.SqlName}}){{end}}"
 	{{Title $tbl.Name}}SQL_Update        = "update {{$tbl.SqlTable}} set {{range $i,$col := $tbl.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}} where {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.SqlName}}=?{{end}}" {{end}}
 	{{Title $tbl.Name}}SQL_Delete        = "delete from {{$tbl.SqlTable}}"
-	{{Title $tbl.Name}}SQL_Find          = "select {{$tbl.SqlTable}}({{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}}) from {{$tbl.SqlTable}}"
-	{{Title $tbl.Name}}SQL_FindRow       = "select {{$tbl.SqlTable}}({{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}},{{BackQuote "modify_stamp"}},{{BackQuote "create_stamp"}}) from {{$tbl.SqlTable}}"
-	{{Title $tbl.Name}}SQL_Count         = "select count(id) from {{$tbl.SqlTable}}"
+	{{Title $tbl.Name}}SQL_Find          = "select {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}} from {{$tbl.SqlTable}}"
+	{{Title $tbl.Name}}SQL_FindRow       = "select {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}},{{BackQuote "modify_stamp"}},{{BackQuote "create_stamp"}} from {{$tbl.SqlTable}}"
+	{{Title $tbl.Name}}SQL_Count         = "select count(*) from {{$tbl.SqlTable}}"
 	{{Title $tbl.Name}}SQL_Create        = "create table {{$tbl.SqlTable}} ("+ {{range $i,$col :=  $tbl.AllColumns false}}
 		"{{$col.SqlName}} {{$col.SqlType}}," + {{end}}
 		"{{BackQuote "modify_stamp"}} timestamp default current_timestamp on update current_timestamp," +
@@ -476,8 +487,8 @@ func (t *x{{Title $tbl.Name}}Operation) FindExByKeyArray(ctx context.Context, id
 		return []*{{Title $tbl.Struct}}Ex{data}, nil 
 	}
 	buf := util.Builder{}
-	buf.Grow(len({{Title $tbl.Name}}SQL_Find) + len({{Title $tbl.Name}}SQL_Where1)+ (len(ids)-1)*len({{Title $tbl.Name}}SQL_Where2))
-	buf.Write([]byte({{Title $tbl.Name}}SQL_Find))	
+	buf.Grow(len({{Title $tbl.Name}}SQL_FindRow) + len({{Title $tbl.Name}}SQL_Where1)+ (len(ids)-1)*len({{Title $tbl.Name}}SQL_Where2))
+	buf.Write([]byte({{Title $tbl.Name}}SQL_FindRow))
 	buf.Write([]byte({{Title $tbl.Name}}SQL_Where1))
 	for i := 0; i < len(ids)-1; i++ {
 		buf.Write([]byte({{Title $tbl.Name}}SQL_Where2))
@@ -535,12 +546,12 @@ func (t *x{{Title $tbl.Name}}Operation) DeleteByKeyArray(ctx context.Context, id
 {{- range $i,$idx := $tbl.Index }}
 func (t *x{{Title $tbl.Name}}Operation) FindByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}} limit,offset int) (datas []*{{Title $tbl.Struct}}, err error) {
 	if t.idx{{Title $idx.Name}}Find == nil {
-		t.idx{{Title $idx.Name}}Find, err = t.db.PrepareContext(ctx, UserFriendSQL_Find + "where {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}} limit ?,?")
+		t.idx{{Title $idx.Name}}Find, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_Find + " where {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}} limit ?,?")
 		if err != nil {
 			return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} find_by_index_{{$idx.Name}} failed,%w", err)
 		}
 	}
-	rows, err := t.idx{{Title $idx.Name}}Find.QueryContext(ctx, {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.Name}}{{end}}, limit, offset)
+	rows, err := t.idx{{Title $idx.Name}}Find.QueryContext(ctx, {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.Name}}{{end}}, offset, limit)
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} find_by_index_{{$idx.Name}} failed,%w", err)
 	}
@@ -557,12 +568,12 @@ func (t *x{{Title $tbl.Name}}Operation) FindByIndex{{Title $idx.Name}}(ctx conte
 }
 func (t *x{{Title $tbl.Name}}Operation) FindExByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}} limit,offset int) (datas []*{{Title $tbl.Struct}}Ex, err error) {
 	if t.idx{{Title $idx.Name}}FindEx == nil {
-		t.idx{{Title $idx.Name}}FindEx, err = t.db.PrepareContext(ctx, UserFriendSQL_FindRow + "where {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}} limit ?,?")
+		t.idx{{Title $idx.Name}}FindEx, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_FindRow + " where {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}} limit ?,?")
 		if err != nil {
 			return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} findex_by_index_{{$idx.Name}} failed,%w", err)
 		}
 	}
-	rows, err := t.idx{{Title $idx.Name}}FindEx.QueryContext(ctx, {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.Name}}{{end}}, limit, offset)
+	rows, err := t.idx{{Title $idx.Name}}FindEx.QueryContext(ctx, {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.Name}}{{end}}, offset, limit)
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} findex_by_index_{{$idx.Name}} failed,%w", err)
 	}
@@ -579,7 +590,7 @@ func (t *x{{Title $tbl.Name}}Operation) FindExByIndex{{Title $idx.Name}}(ctx con
 }
 func (t *x{{Title $tbl.Name}}Operation) CountByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}}) (count int, err error) {
 	if t.idx{{Title $idx.Name}}Count == nil {
-		t.idx{{Title $idx.Name}}Count, err = t.db.PrepareContext(ctx, UserFriendSQL_Count + "where {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}}")
+		t.idx{{Title $idx.Name}}Count, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_Count + " where {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}}")
 		if err != nil {
 			return 0, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} count_by_index_{{$idx.Name}} failed,%w", err)
 		}
@@ -593,7 +604,7 @@ func (t *x{{Title $tbl.Name}}Operation) CountByIndex{{Title $idx.Name}}(ctx cont
 
 func (t *x{{Title $tbl.Name}}Operation) DeleteByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}}) (res sql.Result, err error) {
 if t.idx{{Title $idx.Name}}Delete == nil {
-		t.idx{{Title $idx.Name}}Delete, err = t.db.PrepareContext(ctx, UserFriendSQL_Count + "where {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}}")
+		t.idx{{Title $idx.Name}}Delete, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_Delete + " where {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}}")
 		if err != nil {
 			return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} delete_by_index_{{$idx.Name}} failed,%w", err)
 		}
@@ -608,12 +619,16 @@ if t.idx{{Title $idx.Name}}Delete == nil {
 func (t *x{{Title $tbl.Name}}Operation) Where(bufSize int) *{{Title $tbl.Name}}WhereStmt {
 	w := &{{Title $tbl.Name}}WhereStmt{}
 	w.buf.Grow(bufSize)
+	w.buf.Write([]byte(" where "))
 	return w
 }
 
 func (t *x{{Title $tbl.Name}}Operation) Select(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}, err error) {
 	where.applyLimitAndOffset()
-	var findSql = {{Title $tbl.Name}}SQL_Find + where.String()
+	var findSql = {{Title $tbl.Name}}SQL_Find
+	if where != nil {
+		findSql += where.String()
+	}
 	rows, err := t.db.QueryContext(ctx, findSql)
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} select failed,%w", err)
@@ -632,7 +647,10 @@ func (t *x{{Title $tbl.Name}}Operation) Select(ctx context.Context, where *{{Tit
 }
 func (t *x{{Title $tbl.Name}}Operation) SelectEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}Ex, err error) {
 	where.applyLimitAndOffset()
-	var findSql = {{Title $tbl.Name}}SQL_FindRow + where.String()
+	var findSql = {{Title $tbl.Name}}SQL_FindRow
+	if where != nil {
+		findSql += where.String()
+	}
 	rows, err := t.db.QueryContext(ctx, findSql)
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} selectex failed,%w", err)
@@ -650,7 +668,10 @@ func (t *x{{Title $tbl.Name}}Operation) SelectEx(ctx context.Context, where *{{T
 }
 
 func (t *x{{Title $tbl.Name}}Operation) DeleteMany(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (res sql.Result, err error) {
-	w := where.String()
+	var w  string 
+	if where != nil {
+		w = where.String()
+	}
 	buf := util.Builder{}
 	buf.Grow(len({{Title $tbl.Name}}SQL_Delete) + len(w))
 	buf.Write([]byte({{Title $tbl.Name}}SQL_Delete))
@@ -664,8 +685,12 @@ func (t *x{{Title $tbl.Name}}Operation) DeleteMany(ctx context.Context, where *{
 }
 
 func (t *x{{Title $tbl.Name}}Operation) RangeAll(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt, f func(ctx context.Context, row *{{Title $tbl.Struct}}) bool) error {
-	var findSql = {{Title $tbl.Name}}SQL_Find + where.String()
-	limit := where.limit
+	var findSql = {{Title $tbl.Name}}SQL_Find
+	limit := 0
+	if where != nil {
+		findSql += where.String()
+		limit = where.limit
+	}
 	if limit == 0 {
 		limit = 512
 	}
@@ -675,9 +700,9 @@ func (t *x{{Title $tbl.Name}}Operation) RangeAll(ctx context.Context, where *{{T
 		buf := util.Builder{}
 		buf.Grow(32)
 		buf.Write([]byte(" limit "))
-		buf.WriteInt(limit)
-		buf.WriteByte(',')
 		buf.WriteInt(offset)
+		buf.WriteByte(',')
+		buf.WriteInt(limit)
 		rows, err := t.db.QueryContext(ctx, findSql+buf.String())
 		if err != nil {
 			return fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} range_all failed, offset:%d limit:%d %w", offset, limit, err)
@@ -703,8 +728,12 @@ func (t *x{{Title $tbl.Name}}Operation) RangeAll(ctx context.Context, where *{{T
 }
 
 func (t *x{{Title $tbl.Name}}Operation) RangeAllEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt, f func(ctx context.Context, row *{{Title $tbl.Struct}}Ex) bool) error {
-	var findSql = {{Title $tbl.Name}}SQL_FindRow + where.String()
-	limit := where.limit
+	var findSql = {{Title $tbl.Name}}SQL_FindRow
+	limit := 0
+	if where != nil {
+		findSql += where.String()
+		limit = where.limit
+	}
 	if limit == 0 {
 		limit = 512
 	}
@@ -714,9 +743,9 @@ func (t *x{{Title $tbl.Name}}Operation) RangeAllEx(ctx context.Context, where *{
 		buf := util.Builder{}
 		buf.Grow(32)
 		buf.Write([]byte(" limit "))
-		buf.WriteInt(limit)
-		buf.WriteByte(',')
 		buf.WriteInt(offset)
+		buf.WriteByte(',')
+		buf.WriteInt(limit)
 		rows, err := t.db.QueryContext(ctx, findSql+buf.String())
 		if err != nil {
 			return fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} range_all failed, offset:%d limit:%d %w", offset, limit, err)
@@ -742,8 +771,12 @@ func (t *x{{Title $tbl.Name}}Operation) RangeAllEx(ctx context.Context, where *{
 }
 
 func (t *x{{Title $tbl.Name}}Operation) AllData(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}, err error) {
-	var findSql = {{Title $tbl.Name}}SQL_Find + where.String()
-	limit := where.limit
+	var findSql = {{Title $tbl.Name}}SQL_Find
+	limit := 0
+	if where != nil {
+		findSql += where.String()
+		limit = where.limit
+	}
 	if limit == 0 {
 		limit = 512
 	}
@@ -753,9 +786,9 @@ func (t *x{{Title $tbl.Name}}Operation) AllData(ctx context.Context, where *{{Ti
 		buf := util.Builder{}
 		buf.Grow(32)
 		buf.Write([]byte(" limit "))
-		buf.WriteInt(limit)
-		buf.WriteByte(',')
 		buf.WriteInt(offset)
+		buf.WriteByte(',')
+		buf.WriteInt(limit)
 		rows, err := t.db.QueryContext(ctx, findSql+buf.String())
 		if err != nil {
 			return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} all_data failed, offset:%d limit:%d %w", offset, limit, err)
@@ -778,8 +811,12 @@ func (t *x{{Title $tbl.Name}}Operation) AllData(ctx context.Context, where *{{Ti
 }
 
 func (t *x{{Title $tbl.Name}}Operation) AllDataEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}Ex, err error) {
-	var findSql = {{Title $tbl.Name}}SQL_FindRow + where.String()
-	limit := where.limit
+	var findSql = {{Title $tbl.Name}}SQL_FindRow
+	limit := 0
+	if where != nil {
+		findSql += where.String()
+		limit = where.limit
+	}
 	if limit == 0 {
 		limit = 512
 	}
@@ -789,9 +826,9 @@ func (t *x{{Title $tbl.Name}}Operation) AllDataEx(ctx context.Context, where *{{
 		buf := util.Builder{}
 		buf.Grow(32)
 		buf.Write([]byte(" limit "))
-		buf.WriteInt(limit)
-		buf.WriteByte(',')
 		buf.WriteInt(offset)
+		buf.WriteByte(',')
+		buf.WriteInt(limit)
 		rows, err := t.db.QueryContext(ctx, findSql+buf.String())
 		if err != nil {
 			return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} all_data_ex failed, offset:%d limit:%d %w", offset, limit, err)
@@ -864,9 +901,9 @@ func (w *{{Title $tbl.Name}}WhereStmt) applyLimitAndOffset() {
 		return
 	}
 	w.buf.Write([]byte(" limit "))
-	w.buf.WriteInt(w.limit)
-	w.buf.WriteByte(',')
 	w.buf.WriteInt(w.offset)
+	w.buf.WriteByte(',')
+	w.buf.WriteInt(w.limit)
 }
 
 func (w *{{Title $tbl.Name}}WhereStmt) String() string {
@@ -1055,9 +1092,9 @@ func (x *{{Title $tbl.Name}}NamedWhere) {{Title $col.Name}}() *{{Title $tbl.Name
 
 func (x *{{Title $tbl.Name}}NamedWhere) Limit(limit, offset int) *{{Title $tbl.Name}}NamedWhere {
 	x.buf.Write([]byte(" limit "))
-	x.buf.WriteInt(limit)
-	x.buf.WriteByte(',')
 	x.buf.WriteInt(offset)
+	x.buf.WriteByte(',')
+	x.buf.WriteInt(limit)
 	return x
 }
 
@@ -1141,9 +1178,9 @@ func (x *{{Title $tbl.Name}}NamedOrderBy) {{Title $col.Name}}() *{{Title $tbl.Na
 
 func (x *{{Title $tbl.Name}}NamedOrderBy) Limit(limit, offset int) *{{Title $tbl.Name}}NamedOrderBy {
 	x.buf.Write([]byte(" limit "))
-	x.buf.WriteInt(limit)
-	x.buf.WriteByte(',')
 	x.buf.WriteInt(offset)
+	x.buf.WriteByte(',')
+	x.buf.WriteInt(limit)
 	return x
 }
 
