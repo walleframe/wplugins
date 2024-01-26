@@ -152,11 +152,11 @@ const (
 	{{Title $tbl.Name}}SQL_Insert2       = "insert {{$tbl.SqlTable}}({{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}}) values({{$tbl.Placeholder false}})"{{end}}
 	{{Title $tbl.Name}}SQL_InsertValues  = ",({{$tbl.Placeholder true}})"
 	{{Title $tbl.Name}}SQL_InsertValues2 = ",({{$tbl.Placeholder false}})" {{if $tbl.PrimaryKey}}
-	{{Title $tbl.Name}}SQL_Where1        = " where ({{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.SqlName}}=?{{end}})"
-	{{Title $tbl.Name}}SQL_Where2        = " or ({{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.SqlName}}=?{{end}})"
+	{{Title $tbl.Name}}SQL_Where1        = " where ({{range $i,$col := $tbl.PrimaryKey}}{{And $i}}{{$col.SqlName}}=?{{end}})"
+	{{Title $tbl.Name}}SQL_Where2        = " or ({{range $i,$col := $tbl.PrimaryKey}}{{And $i}}{{$col.SqlName}}=?{{end}})"
 	{{Title $tbl.Name}}SQL_Upsert        = "insert {{$tbl.SqlTable}}({{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}}) values({{$tbl.Placeholder false}})"
 	{{Title $tbl.Name}}SQL_UpsertUpdate  = " on duplicate key update {{range $i,$col := $tbl.AllColumns true}}{{Comma $i}}{{$col.SqlName}}=values({{$col.SqlName}}){{end}}"
-	{{Title $tbl.Name}}SQL_Update        = "update {{$tbl.SqlTable}} set {{range $i,$col := $tbl.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}} where {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.SqlName}}=?{{end}}" {{end}}
+	{{Title $tbl.Name}}SQL_Update        = "update {{$tbl.SqlTable}} set {{range $i,$col := $tbl.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}} where {{range $i,$col := $tbl.PrimaryKey}}{{And $i}}{{$col.SqlName}}=?{{end}}" {{end}}
 	{{Title $tbl.Name}}SQL_Delete        = "delete from {{$tbl.SqlTable}}"
 	{{Title $tbl.Name}}SQL_Find          = "select {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}} from {{$tbl.SqlTable}}"
 	{{Title $tbl.Name}}SQL_FindRow       = "select {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}},{{BackQuote "modify_stamp"}},{{BackQuote "create_stamp"}} from {{$tbl.SqlTable}}"
@@ -217,15 +217,15 @@ func New{{Title $tbl.Name}}Operation(db *sqlx.DB) (_ *x{{Title $tbl.Name}}Operat
 	if err != nil {
 		return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} upsert failed,%w", err)
 	}
-	t.delete, err = db.Prepare({{Title $tbl.Name}}SQL_Delete + " where {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.SqlName}}=?{{end}}")
+	t.delete, err = db.Prepare({{Title $tbl.Name}}SQL_Delete + " where {{range $i,$col := $tbl.PrimaryKey}}{{And $i}}{{$col.SqlName}}=?{{end}}")
 	if err != nil {
 		return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} delete failed,%w", err)
 	}
-	t.find, err = db.Prepare({{Title $tbl.Name}}SQL_Find + " where {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.SqlName}}=?{{end}}")
+	t.find, err = db.Prepare({{Title $tbl.Name}}SQL_Find + " where {{range $i,$col := $tbl.PrimaryKey}}{{And $i}}{{$col.SqlName}}=?{{end}}")
 	if err != nil {
 		return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} find failed,%w", err)
 	}
-	t.findRow, err = db.Prepare({{Title $tbl.Name}}SQL_FindRow + " where {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.SqlName}}=?{{end}}")
+	t.findRow, err = db.Prepare({{Title $tbl.Name}}SQL_FindRow + " where {{range $i,$col := $tbl.PrimaryKey}}{{And $i}}{{$col.SqlName}}=?{{end}}")
 	if err != nil {
 		return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} findex failed,%w", err)
 	}{{end}}
@@ -547,7 +547,7 @@ func (t *x{{Title $tbl.Name}}Operation) DeleteByKeyArray(ctx context.Context, id
 {{- range $i,$idx := $tbl.Index }}
 func (t *x{{Title $tbl.Name}}Operation) FindByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}} limit,offset int) (datas []*{{Title $tbl.Struct}}, err error) {
 	if t.idx{{Title $idx.Name}}Find == nil {
-		t.idx{{Title $idx.Name}}Find, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_Find + " where {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}} limit ?,?")
+		t.idx{{Title $idx.Name}}Find, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_Find + " where {{range $i,$col := $idx.Columns}}{{And $i}}{{$col.SqlName}}=?{{end}} limit ?,?")
 		if err != nil {
 			return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} find_by_index_{{$idx.Name}} failed,%w", err)
 		}
@@ -569,7 +569,7 @@ func (t *x{{Title $tbl.Name}}Operation) FindByIndex{{Title $idx.Name}}(ctx conte
 }
 func (t *x{{Title $tbl.Name}}Operation) FindExByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}} limit,offset int) (datas []*{{Title $tbl.Struct}}Ex, err error) {
 	if t.idx{{Title $idx.Name}}FindEx == nil {
-		t.idx{{Title $idx.Name}}FindEx, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_FindRow + " where {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}} limit ?,?")
+		t.idx{{Title $idx.Name}}FindEx, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_FindRow + " where {{range $i,$col := $idx.Columns}}{{And $i}}{{$col.SqlName}}=?{{end}} limit ?,?")
 		if err != nil {
 			return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} findex_by_index_{{$idx.Name}} failed,%w", err)
 		}
@@ -591,7 +591,7 @@ func (t *x{{Title $tbl.Name}}Operation) FindExByIndex{{Title $idx.Name}}(ctx con
 }
 func (t *x{{Title $tbl.Name}}Operation) CountByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}}) (count int, err error) {
 	if t.idx{{Title $idx.Name}}Count == nil {
-		t.idx{{Title $idx.Name}}Count, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_Count + " where {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}}")
+		t.idx{{Title $idx.Name}}Count, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_Count + " where {{range $i,$col := $idx.Columns}}{{And $i}}{{$col.SqlName}}=?{{end}}")
 		if err != nil {
 			return 0, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} count_by_index_{{$idx.Name}} failed,%w", err)
 		}
@@ -605,7 +605,7 @@ func (t *x{{Title $tbl.Name}}Operation) CountByIndex{{Title $idx.Name}}(ctx cont
 
 func (t *x{{Title $tbl.Name}}Operation) DeleteByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}}) (res sql.Result, err error) {
 if t.idx{{Title $idx.Name}}Delete == nil {
-		t.idx{{Title $idx.Name}}Delete, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_Delete + " where {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}}")
+		t.idx{{Title $idx.Name}}Delete, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_Delete + " where {{range $i,$col := $idx.Columns}}{{And $i}}{{$col.SqlName}}=?{{end}}")
 		if err != nil {
 			return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} delete_by_index_{{$idx.Name}} failed,%w", err)
 		}
@@ -999,7 +999,7 @@ func (x *{{Title $tbl.Name}}SQLWriter) Insert() *{{Title $tbl.Name}}NamedInsert 
 }
 
 func (x *{{Title $tbl.Name}}SQLWriter) Delete() *{{Title $tbl.Name}}NamedWhere {
-	x.buf.Write([]byte("delete {{$tbl.SqlTable}} where "))
+	x.buf.Write([]byte("delete from {{$tbl.SqlTable}} where "))
 	return &{{Title $tbl.Name}}NamedWhere{
 		buf: &x.buf,
 	}

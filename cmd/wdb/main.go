@@ -55,6 +55,13 @@ func generateWalleDB(msg *buildpb.MsgDesc, prog *buildpb.FileDesc, depend map[st
 	tblName := msg.GetString(options.SqlTableName, msg.Name)
 	engine := msg.GetString(options.SqlEngine, "InnoDB")
 
+	gen.DefaultFuncMap["And"] = func(i int) string {
+		if i == 0{
+			return ""
+		}
+		return " and "
+	}
+
 	tbl := &SqlTable{
 		DB:       dbName,
 		SqlTable: tblName,
