@@ -53,6 +53,7 @@ type {{Title $tbl.Name}}Operation interface {
 	Where(bufSize int) *{{Title $tbl.Name}}WhereStmt 
 	Select(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}, err error) 
 	SelectEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}Ex, err error) 
+	Count(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (count int, err error)
 
 	DeleteMany(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (res sql.Result, err error) 
 
@@ -645,6 +646,7 @@ func (t *x{{Title $tbl.Name}}Operation) Select(ctx context.Context, where *{{Tit
 	}
 	return
 }
+
 func (t *x{{Title $tbl.Name}}Operation) SelectEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}Ex, err error) {
 	where.applyLimitAndOffset()
 	var findSql = {{Title $tbl.Name}}SQL_FindRow
@@ -663,6 +665,19 @@ func (t *x{{Title $tbl.Name}}Operation) SelectEx(ctx context.Context, where *{{T
 			return nil, err
 		}
 		datas = append(datas, data)
+	}
+	return
+}
+
+func (t *x{{Title $tbl.Name}}Operation) Count(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (count int, err error) {
+	where.applyLimitAndOffset()
+	var findSql = {{Title $tbl.Name}}SQL_Count
+	if where != nil {
+		findSql += where.String()
+	}
+	err = t.db.QueryRowContext(ctx, findSql).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} count failed,%w", err)
 	}
 	return
 }
@@ -1002,6 +1017,18 @@ func (x *{{Title $tbl.Name}}NamedInsert) {{Title $col.Name}}() *{{Title $tbl.Nam
 }
 {{end}}
 
+func (x *{{Title $tbl.Name}}NamedInsert) ModifyStamp() *{{Title $tbl.Name}}NamedInsert {
+	x.list = append(x.list, "{{BackQuote "modify_stamp"}}")
+	x.values = append(x.values, ":modify_stamp")
+	return x
+}
+
+func (x *{{Title $tbl.Name}}NamedInsert) CreateStamp() *{{Title $tbl.Name}}NamedInsert {
+	x.list = append(x.list, "{{BackQuote "create_stamp"}}")
+	x.values = append(x.values, ":create_stamp")
+	return x
+}
+
 func (x *{{Title $tbl.Name}}NamedInsert) ToSQL() string {
 	x.buf.Write([]byte("insert {{$tbl.SqlTable}}("))
 	x.buf.WriteString(strings.Join(x.list, ","))
@@ -1031,12 +1058,40 @@ func (x *{{Title $tbl.Name}}NamedUpdate) {{Title $col.Name}}() *{{Title $tbl.Nam
 	}
 	if x.values != nil && *x.values {
 		x.buf.Write([]byte("{{$col.SqlName}}=values({{$col.SqlName}})"))
+	} else {
+		x.buf.Write([]byte("{{$col.SqlName}}=:{{$col.Name}}"))
 	}
-	x.buf.Write([]byte("{{$col.SqlName}}=:{{$col.Name}}"))
 	*x.n++
 	return x
 }
 {{end}}
+
+func (x *{{Title $tbl.Name}}NamedUpdate) ModifyStamp() *{{Title $tbl.Name}}NamedUpdate {
+	if *x.n > 0 {
+		x.buf.WriteByte(',')
+	}
+	if x.values != nil && *x.values {
+		x.buf.Write([]byte("{{BackQuote "modify_stamp"}}=values({{BackQuote "modify_stamp"}})"))
+	}else {
+		x.buf.Write([]byte("{{BackQuote "modify_stamp"}}=:modify_stamp"))
+	}
+	*x.n++
+	return x
+}
+
+func (x *{{Title $tbl.Name}}NamedUpdate) CreateStamp() *{{Title $tbl.Name}}NamedUpdate {
+	if *x.n > 0 {
+		x.buf.WriteByte(',')
+	}
+	if x.values != nil && *x.values {
+		x.buf.Write([]byte("{{BackQuote "create_stamp"}}=values({{BackQuote "create_stamp"}})"))
+	}else {
+		x.buf.Write([]byte("{{BackQuote "create_stamp"}}=:create_stamp"))
+	}
+	*x.n++
+	return x
+}
+
 
 func (x *{{Title $tbl.Name}}NamedUpdate) Where() *{{Title $tbl.Name}}NamedWhere {
 	if x.values != nil {
@@ -1067,6 +1122,24 @@ func (x *{{Title $tbl.Name}}NamedSelect) {{Title $col.Name}}() *{{Title $tbl.Nam
 }
 {{end}}
 
+func (x *{{Title $tbl.Name}}NamedSelect) ModifyStamp() *{{Title $tbl.Name}}NamedSelect {
+	if *x.n > 0 {
+		x.buf.WriteByte(',')
+	}
+	x.buf.Write([]byte("{{BackQuote "modify_stamp"}}"))
+	*x.n++
+	return x
+}
+
+func (x *{{Title $tbl.Name}}NamedSelect) CreateStamp() *{{Title $tbl.Name}}NamedSelect {
+	if *x.n > 0 {
+		x.buf.WriteByte(',')
+	}
+	x.buf.Write([]byte("{{BackQuote "create_stamp"}}"))
+	*x.n++
+	return x
+}
+
 func (x *{{Title $tbl.Name}}NamedSelect) Where() *{{Title $tbl.Name}}NamedWhere {
 	x.buf.Write([]byte(" from {{$tbl.SqlTable}} where "))
 	return &{{Title $tbl.Name}}NamedWhere{
@@ -1089,6 +1162,16 @@ func (x *{{Title $tbl.Name}}NamedWhere) {{Title $col.Name}}() *{{Title $tbl.Name
 	return x
 }
 {{end}}
+
+func (x *{{Title $tbl.Name}}NamedWhere) ModifyStamp() *{{Title $tbl.Name}}NamedWhere {
+	x.buf.Write([]byte("{{BackQuote "modify_stamp"}} = :modify_stamp"))
+	return x
+}
+
+func (x *{{Title $tbl.Name}}NamedWhere) CreateStamp() *{{Title $tbl.Name}}NamedWhere {
+	x.buf.Write([]byte("{{BackQuote "create_stamp"}} = :create_stamp"))
+	return x
+}
 
 func (x *{{Title $tbl.Name}}NamedWhere) Limit(limit, offset int) *{{Title $tbl.Name}}NamedWhere {
 	x.buf.Write([]byte(" limit "))
@@ -1174,6 +1257,30 @@ func (x *{{Title $tbl.Name}}NamedOrderBy) {{Title $col.Name}}() *{{Title $tbl.Na
 	}
 }
 {{end}}
+
+func (x *{{Title $tbl.Name}}NamedOrderAsc) ModifyStamp() *{{Title $tbl.Name}}NamedOrderAsc {
+	if *x.n > 0 {
+		x.buf.WriteByte(',')
+	}
+	x.buf.Write([]byte("{{BackQuote "modify_stamp"}}"))
+	*x.n++
+	return &{{Title $tbl.Name}}NamedOrderAsc{
+		buf: x.buf,
+		n:   x.n,
+	}
+}
+
+func (x *{{Title $tbl.Name}}NamedOrderAsc) CreateStamp() *{{Title $tbl.Name}}NamedOrderAsc {
+	if *x.n > 0 {
+		x.buf.WriteByte(',')
+	}
+	x.buf.Write([]byte("{{BackQuote "create_stamp"}}"))
+	*x.n++
+	return &{{Title $tbl.Name}}NamedOrderAsc{
+		buf: x.buf,
+		n:   x.n,
+	}
+}
 
 
 func (x *{{Title $tbl.Name}}NamedOrderBy) Limit(limit, offset int) *{{Title $tbl.Name}}NamedOrderBy {
