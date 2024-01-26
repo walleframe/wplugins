@@ -625,9 +625,9 @@ func (t *x{{Title $tbl.Name}}Operation) Where(bufSize int) *{{Title $tbl.Name}}W
 }
 
 func (t *x{{Title $tbl.Name}}Operation) Select(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}, err error) {
-	where.applyLimitAndOffset()
 	var findSql = {{Title $tbl.Name}}SQL_Find
 	if where != nil {
+		where.applyLimitAndOffset()
 		findSql += where.String()
 	}
 	rows, err := t.db.QueryContext(ctx, findSql)
@@ -648,9 +648,9 @@ func (t *x{{Title $tbl.Name}}Operation) Select(ctx context.Context, where *{{Tit
 }
 
 func (t *x{{Title $tbl.Name}}Operation) SelectEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}Ex, err error) {
-	where.applyLimitAndOffset()
 	var findSql = {{Title $tbl.Name}}SQL_FindRow
 	if where != nil {
+		where.applyLimitAndOffset()
 		findSql += where.String()
 	}
 	rows, err := t.db.QueryContext(ctx, findSql)
@@ -670,9 +670,9 @@ func (t *x{{Title $tbl.Name}}Operation) SelectEx(ctx context.Context, where *{{T
 }
 
 func (t *x{{Title $tbl.Name}}Operation) Count(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (count int, err error) {
-	where.applyLimitAndOffset()
 	var findSql = {{Title $tbl.Name}}SQL_Count
 	if where != nil {
+		where.applyLimitAndOffset()
 		findSql += where.String()
 	}
 	err = t.db.QueryRowContext(ctx, findSql).Scan(&count)
