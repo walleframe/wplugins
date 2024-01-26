@@ -88,7 +88,7 @@ func init() {
 			return fmt.Errorf("swap {{$tbl.DB}}.{{$tbl.SqlTable}} pointer, sync index failed, %w", err)
 		}
 		//
-		tableOP, err := new{{Title $tbl.Name}}Operation(db)
+		tableOP, err := New{{Title $tbl.Name}}Operation(db)
 		if err != nil {
 			return fmt.Errorf("swap {{$tbl.DB}}.{{$tbl.SqlTable}} pointer, new table operation failed, %w", err)
 		}
@@ -184,7 +184,7 @@ type x{{Title $tbl.Name}}Operation struct {
 	idx{{Title $idx.Name}}Delete *sql.Stmt{{end}}
 }
 
-func new{{Title $tbl.Name}}Operation(db *sqlx.DB) (_ *x{{Title $tbl.Name}}Operation, err error) {
+func New{{Title $tbl.Name}}Operation(db *sqlx.DB) (_ *x{{Title $tbl.Name}}Operation, err error) {
 	t := &x{{Title $tbl.Name}}Operation{
 		db: db,
 	}
