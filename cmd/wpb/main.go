@@ -101,6 +101,10 @@ func generateWalleProrobuf(prog *buildpb.FileDesc, depend map[string]*buildpb.Fi
 		}))
 		// sql 额外生成一个Ex消息,附带 modify_stamp,create_stamp
 		if genDB && !m.HasOption(options.SqlIgnore) {
+			// 设置sql.ex == false,不生成ex
+			if m.HasOption(options.SqlExSwitch) && !m.Options.GetOptionBool(options.SqlExSwitch) {
+				continue
+			}
 			No := int32(len(m.Fields))
 			sqlEx := proto.Clone(m).(*buildpb.MsgDesc)
 			sqlEx.Name += "_ex"

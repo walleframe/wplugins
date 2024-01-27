@@ -48,4 +48,7 @@ const (
 	SqlCustomSet     = "sql.custom"
 	SqlIndexPrefix   = "sql.index."
 	SqlUniquePrefix  = "sql.unique."
+	SqlExSwitch      = "sql.ex"
+	SqlGenUpdate     = "sql.update"
+	SqlGenUpsert     = "sql.upsert"
 )

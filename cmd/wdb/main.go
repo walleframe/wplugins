@@ -42,7 +42,7 @@ func main() {
 				return false
 			}
 			if msg.HasOption(options.SqlIgnore) {
-				return false 
+				return false
 			}
 			return true
 		},
@@ -56,23 +56,27 @@ func generateWalleDB(msg *buildpb.MsgDesc, prog *buildpb.FileDesc, depend map[st
 	engine := msg.GetString(options.SqlEngine, "InnoDB")
 
 	gen.DefaultFuncMap["And"] = func(i int) string {
-		if i == 0{
+		if i == 0 {
 			return ""
 		}
 		return " and "
 	}
 
 	tbl := &SqlTable{
-		DB:       dbName,
-		SqlTable: tblName,
-		Name:     msg.Name,
-		Struct:   prog.Pkg.Package + "." + msg.Name,
-		SvcDB:    filepath.Base(cfg.SvcPkg),
-		Charset:  cfg.Charset,
-		Collate:  cfg.Collate,
-		Engine:   engine,
+		DB:        dbName,
+		SqlTable:  tblName,
+		Name:      msg.Name,
+		Struct:    prog.Pkg.Package + "." + msg.Name,
+		SvcDB:     filepath.Base(cfg.SvcPkg),
+		Charset:   cfg.Charset,
+		Collate:   cfg.Collate,
+		Engine:    engine,
+		GenEx:     !msg.HasOption(options.SqlExSwitch) || msg.Options.GetOptionBool(options.SqlExSwitch),
+		GenUpdate: !msg.HasOption(options.SqlGenUpdate) || msg.Options.GetOptionBool(options.SqlGenUpdate),
+		GenUpsert: !msg.HasOption(options.SqlGenUpsert) || msg.Options.GetOptionBool(options.SqlGenUpsert),
 	}
 
+	// log.Printf("%#v\n", tbl)
 	// 分析表定义
 	err = ParseSqlTableColumns(msg, tbl)
 	if err != nil {

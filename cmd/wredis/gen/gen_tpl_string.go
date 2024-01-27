@@ -7,9 +7,13 @@ func (x *x{{.Name}}) Incr(ctx context.Context) ({{.TypeString.Type}}, error) {
 	return {{.TypeString.Type}}(n), err
 }
 
-func (x *x{{.Name}}) IncrBy(ctx context.Context, val int) ({{.TypeString.Type}}, error) {
-	n,err := x.rds.IncrBy(ctx, x.key, int64(val)).Result()
-	return {{.TypeString.Type}}(n), err
+func (x *x{{.Name}}) IncrBy(ctx context.Context, val int) (_ {{.TypeString.Type}},err error) {
+	cmd := redis.NewIntCmd(ctx, "incrby", x.key, strconv.FormatInt(int64(val), 10))
+	err = x.rds.Process(ctx, cmd)
+	if err != nil {
+		return
+	}
+	return {{.TypeString.Type}}(cmd.Val()), nil
 }
 
 func (x *x{{.Name}}) Decr(ctx context.Context) ({{.TypeString.Type}}, error) {
@@ -17,9 +21,13 @@ func (x *x{{.Name}}) Decr(ctx context.Context) ({{.TypeString.Type}}, error) {
 	return {{.TypeString.Type}}(n), err
 }
 
-func (x *x{{.Name}}) DecrBy(ctx context.Context, val int) ({{.TypeString.Type}}, error) {
-	n,err := x.rds.DecrBy(ctx, x.key, int64(val)).Result()
-	return {{.TypeString.Type}}(n), err
+func (x *x{{.Name}}) DecrBy(ctx context.Context, val int) (_ {{.TypeString.Type}}, err error) {
+	cmd := redis.NewIntCmd(ctx, "decrby", x.key, strconv.FormatInt(int64(val), 10))
+	err = x.rds.Process(ctx, cmd)
+	if err != nil {
+		return
+	}
+	return {{.TypeString.Type}}(cmd.Val()), nil
 }
 
 func (x *x{{.Name}}) Get(ctx context.Context) ({{.TypeString.Type}}, error) {
@@ -59,6 +67,15 @@ func (x *x{{.Name}}) Get(ctx context.Context) ({{.TypeString.Type}}, error) {
 	return {{.TypeString.Type}}(val), nil
 }
 
+func (x *x{{.Name}}) IncrBy(ctx context.Context, val int) (_ {{.TypeString.Type}},err error) {
+	cmd := redis.NewFloatCmd(ctx, "incrbyfloat", x.key, strconv.FormatInt(int64(val), 10))
+	err = x.rds.Process(ctx, cmd)
+	if err != nil {
+		return
+	}
+	return {{.TypeString.Type}}(cmd.Val()), nil
+}
+
 func (x *x{{.Name}}) Set(ctx context.Context, val {{.TypeString.Type}}, expire time.Duration) error {
 	return x.rds.Set(ctx, x.key, rdconv.Float64ToString(float64(val)), expire).Err()
 }
@@ -72,12 +89,22 @@ func (x *x{{.Name}}) SetEx(ctx context.Context, val {{.TypeString.Type}}, expire
 } {{Import "github.com/walleframe/walle/util/rdconv" "Float64ToString"}}
 `)
 	registerTemplate("string_string", `
-func (x *x{{.Name}}) GetRange(ctx context.Context, start, end int64) (string, error) {
-	return x.rds.GetRange(ctx, x.key, start, end).Result()
+func (x *x{{.Name}}) GetRange(ctx context.Context, start, end int64) (_ string, err error) {
+	cmd := redis.NewStringCmd(ctx, "getrange", x.key, strconv.FormatInt(start, 10), strconv.FormatInt(end, 10))
+	err = x.rds.Process(ctx, cmd)
+	if err != nil {
+		return
+	}
+	return cmd.Val(), nil
 }
 
-func (x *x{{.Name}}) SetRange(ctx context.Context, offset int64, value string) (int64, error) {
-	return x.rds.SetRange(ctx, x.key, offset, value).Result()
+func (x *x{{.Name}}) SetRange(ctx context.Context, offset int64, value string) (_ int64, err error) {
+		cmd := redis.NewIntCmd(ctx, "setrange", x.key, strconv.FormatInt(offset, 10), value)
+	err = x.rds.Process(ctx, cmd)
+	if err != nil {
+		return
+	}
+	return cmd.Val(), nil
 }
 
 func (x *x{{.Name}}) Append(ctx context.Context, val string) (int64, error) {

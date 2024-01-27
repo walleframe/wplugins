@@ -28,6 +28,9 @@ type SqlTable struct {
 	PrimaryKey []*SqlColumn
 	Columns    []*SqlColumn
 	Index      []*SqlIndex
+	GenEx      bool
+	GenUpdate  bool
+	GenUpsert  bool
 }
 
 func (tbl *SqlTable) AllColumns(ignoreAutoID bool) []*SqlColumn {

@@ -8,26 +8,29 @@
  - *使用包名作为数据库配置名,默认生成的操作代码目录为 pkg/dbop/包名,可以通过 ~WDB_OPCODE_PATH~ 修改*
  - *定义了 ~sql.tbl_name~ option 会自动生成名为 `消息名Ex`的消息体(含数据条目创建时间和最后一次修改时间)*
 *** 使用
-| level  | options         | value  | desc                                       |
-|--------+-----------------+--------+--------------------------------------------|
-| 文件级 |                 |        |                                            |
-|        | sql.db          | string | 此文件定义的表归属于哪个数据库             |
-| 消息级 |                 |        |                                            |
-|        | sql.tbl_name    | string | string类型的值会作为实际sql的表名          |
-|        | sql.ignore      | bool   | 标识message不是sql表.                      |
-|        | sql.pk          | string | 设置primary key,值为以','分隔的字段名称    |
-|        | sql.primary_key | string | 同 sql.pk                                  |
-|        | sql.index.*     | string | 普通索引,值为以','分隔的字段名称           |
-|        | sql.unique.*    | string | unique索引,值为以','分隔的字段名称         |
-|        | sql.engine      | string | mysql engine                               |
-| 字段级 |                 |        |                                            |
-|        | sql.pk          | bool   | 设置本字段是primary key.                   |
-|        | sql.primary_key | bool   | 同 sql.pk                                  |
-|        | sql.auto_incr   | bool   | 设置字段自增,仅能在一个int类型的字段上设置 |
-|        | sql.type        | string | 设置mysql类型,会忽略 sql.size,sql.null     |
-|        | sql.size        | int    | 对string类型设置长度,varchar(size)         |
-|        | sql.null        | bool   | 字段可以为null,默认所有字段NOT NULL        |
-|        | sql.custom      | bool   | 对本字段,自定义序列化和反序列化函数        |
+| level  | options         | value  | desc                                                |
+|--------+-----------------+--------+-----------------------------------------------------|
+| 文件级 |                 |        |                                                     |
+|        | sql.db          | string | 此文件定义的表归属于哪个数据库                      |
+| 消息级 |                 |        |                                                     |
+|        | sql.tbl_name    | string | string类型的值会作为实际sql的表名                   |
+|        | sql.ignore      | bool   | 标识message不是sql表.                               |
+|        | sql.pk          | string | 设置primary key,值为以','分隔的字段名称             |
+|        | sql.primary_key | string | 同 sql.pk                                           |
+|        | sql.index.*     | string | 普通索引,值为以','分隔的字段名称                    |
+|        | sql.unique.*    | string | unique索引,值为以','分隔的字段名称                  |
+|        | sql.engine      | string | mysql engine                                        |
+|        | sql.ex          | bool   | 默认true, false: 不生成ex结构体和接口               |
+|        | sql.upsert      | bool   | 默认true, false: 可以生成的情况下禁止生成upsert接口 |
+|        | sql.update      | bool   | 默认true, false: 可以生成的情况下禁止生成update接口 |
+| 字段级 |                 |        |                                                     |
+|        | sql.pk          | bool   | 设置本字段是primary key.                            |
+|        | sql.primary_key | bool   | 同 sql.pk                                           |
+|        | sql.auto_incr   | bool   | 设置字段自增,仅能在一个int类型的字段上设置          |
+|        | sql.type        | string | 设置mysql类型,会忽略 sql.size,sql.null              |
+|        | sql.size        | int    | 对string类型设置长度,varchar(size)                  |
+|        | sql.null        | bool   | 字段可以为null,默认所有字段NOT NULL                 |
+|        | sql.custom      | bool   | 对本字段,自定义序列化和反序列化函数                 |
 
 ~sql.pk~ 优先使用消息级配置的字段列表数据.
 
@@ -56,7 +59,7 @@
 生成代码还包含了一个简单的sql语句生成(会根据调用顺序生成sql语句,应该像正常写sql那样去调用),例:
 #+begin_src go
   db_user.UserInfoNamedSQL(128).Insert().Uid().Email().Name().ToSQL() // insert user_info(`uid`,`email`,`name`) values(:uid,:email,:name)
-	db_user.UserInfoNamedSQL(128).Delete().Email().And().Name().ToSQL() // delete user_info where `email` = :email and `name` = :name
+	db_user.UserInfoNamedSQL(128).Delete().Email().And().Name().ToSQL() // delete from user_info where `email` = :email and `name` = :name
 	db_user.UserInfoNamedSQL(128).Update().Name().Email().Where().Uid().ToSQL() // update user_info set `name`=:name,`email`=:email where `uid` = :uid
 	db_user.UserInfoNamedSQL(128).Select().Uid().Name().Where().Uid().And().Email().Limit(10, 0).ToSQL() //select `uid`,`name` from user_info where `uid` = :uid and `email` = :email limit 10,0
 
@@ -100,9 +103,221 @@ sql.type = "timestamp default current_timestamp"
 
 ** 示例
 *** 用户信息表
-auto incr, primary key 
-*** 邮件列表
-primary key
-index 
+表定义 
+#+begin_src protobuf
+sql.db = "db_user"; // 定义当前文件所有表是在'db_user'数据库
+
+message user_info {
+	sql.pk = "uid" // Primary Key 
+	sql.unique.name = "name" // name字段做唯一索引
+	sql.index.email = "email" // email字段做索引
+	int64 uid = 1 {
+		sql.auto_incr = true  // 自增
+	};
+	string name = 2 {
+		sql.size = 128
+	};
+	string email = 3;
+}
+#+end_src
+
+生成代码调用
+#+begin_src go
+  var (
+	  user *dbop.UserInfo
+	  users []*dbop.UserInfo
+	  err error
+    uid int64 = 1
+	  res sql.Result
+	)
+  // 插入信息
+  res, err = db_user.UserInfoOP().Insert(ctx, user)
+  uid, err := res.LastInsertId() //
+  // 更新
+  res, err = db_user.UserInfoOP().Update(ctx, user)
+  // merge
+  res, err = db_user.UserInfoOP().Upsert(ctx, user)
+
+  // 查找指定用户
+	user, err = db_user.UserInfoOP().Find(ctx, uid)
+  // 通过索引查找
+  users, err = db_user.UserInfoOP().FindByIndexEmail(ctx, "xxx@xx.com", 5, 0) // limit 0,5
+
+  // 自定义数据查询
+  users,err = db_user.UserInfoOP().Select(ctx, nil) // 查询全部数据
+  users,err = db_user.UserInfoOP().Select(ctx, db_user.UserInfoOP().Where(32).Uid().LessEqual(1000)) // 查询uid小于1000的数据
+#+end_src
+接口示例(Ex结构体内包含 ModifyStamp,CreateStamp.):
+#+begin_src go
+type UserInfoKey = int64
+
+type UserInfoOperation interface {
+	Insert(ctx context.Context, data *dbop.UserInfo) (res sql.Result, err error)
+	InsertMany(ctx context.Context, datas []*dbop.UserInfo) (res sql.Result, err error)
+
+	Update(ctx context.Context, data *dbop.UserInfo) (res sql.Result, err error)
+	Upsert(ctx context.Context, data *dbop.UserInfo) (res sql.Result, err error)
+	UpsertMany(ctx context.Context, datas []*dbop.UserInfo) (res sql.Result, err error)
+
+	Find(ctx context.Context, uid int64) (data *dbop.UserInfo, err error)
+	FindEx(ctx context.Context, uid int64) (data *dbop.UserInfoEx, err error)
+	Delete(ctx context.Context, uid int64) (res sql.Result, err error)
+
+	FindByKey(ctx context.Context, id UserInfoKey) (data *dbop.UserInfo, err error)
+	FindExByKey(ctx context.Context, id UserInfoKey) (data *dbop.UserInfoEx, err error)
+	DeleteByKey(ctx context.Context, id UserInfoKey) (res sql.Result, err error)
+
+	FindByKeyArray(ctx context.Context, ids []UserInfoKey) (datas []*dbop.UserInfo, err error)
+	FindExByKeyArray(ctx context.Context, ids []UserInfoKey) (datas []*dbop.UserInfoEx, err error)
+	DeleteByKeyArray(ctx context.Context, ids []UserInfoKey) (res sql.Result, err error)
+
+	FindByIndexEmail(ctx context.Context, email string, limit, offset int) (datas []*dbop.UserInfo, err error)
+	FindExByIndexEmail(ctx context.Context, email string, limit, offset int) (datas []*dbop.UserInfoEx, err error)
+	CountByIndexEmail(ctx context.Context, email string) (count int, err error)
+	DeleteByIndexEmail(ctx context.Context, email string) (res sql.Result, err error)
+
+	FindByIndexName(ctx context.Context, name string, limit, offset int) (datas []*dbop.UserInfo, err error)
+	FindExByIndexName(ctx context.Context, name string, limit, offset int) (datas []*dbop.UserInfoEx, err error)
+	CountByIndexName(ctx context.Context, name string) (count int, err error)
+	DeleteByIndexName(ctx context.Context, name string) (res sql.Result, err error)
+
+	Where(bufSize int) *UserInfoWhereStmt
+	Select(ctx context.Context, where *UserInfoWhereStmt) (datas []*dbop.UserInfo, err error)
+	SelectEx(ctx context.Context, where *UserInfoWhereStmt) (datas []*dbop.UserInfoEx, err error)
+	Count(ctx context.Context, where *UserInfoWhereStmt) (count int, err error)
+
+	DeleteMany(ctx context.Context, where *UserInfoWhereStmt) (res sql.Result, err error)
+
+	RangeAll(ctx context.Context, where *UserInfoWhereStmt, f func(ctx context.Context, row *dbop.UserInfo) bool) error
+	RangeAllEx(ctx context.Context, where *UserInfoWhereStmt, f func(ctx context.Context, row *dbop.UserInfoEx) bool) error
+	AllData(ctx context.Context, where *UserInfoWhereStmt) (datas []*dbop.UserInfo, err error)
+	AllDataEx(ctx context.Context, where *UserInfoWhereStmt) (datas []*dbop.UserInfoEx, err error)
+
+	// use for custom named sql
+	DB() *sqlx.DB
+}
+
+// 数据库操作接口
+var UserInfoOP = func() UserInfoOperation
+
+// 自定义sql语句生成. 注意: 仅辅助生成sql语句.
+func UserInfoNamedSQL(bufSize int) *UserInfoSQLWriter 
+
+// 同步表字段,索引到数据库.(表不存在创建,已经存在,对比列,如果列不存在则创建,已经存在列,不会检查类型,需要业务方保证)
+func SyncUserInfoDBTable(ctx context.Context, db *sqlx.DB) (err error)
+
+// 结构体到Primary Key 转换
+func UserInfoToPrimaryKeys(rows []*dbop.UserInfo) (ids []UserInfoKey)
+func UserInfoExToPrimaryKeysEx(rows []*dbop.UserInfoEx) (ids []UserInfoKey)
+
+// 手动创建
+func NewUserInfoOperation(db *sqlx.DB) (_ *xUserInfoOperation, err error) 
+#+end_src
+*** 好友列表
+#+begin_src protobuf
+message user_friend {
+	sql.pk = "uid,fid" // Primary Key 是 uid,fid 
+	sql.index.uid = "uid" // 使用uid做索引 
+	int64 uid = 1 ;
+	int64 fid = 2 ;
+	int8 state = 3;
+}
+#+end_src
+生成接口 
+#+begin_src go
+type UserFriendKey struct {
+	Uid int64
+	Fid int64
+}
+
+type UserFriendOperation interface {
+	Insert(ctx context.Context, data *dbop.UserFriend) (res sql.Result, err error)
+	InsertMany(ctx context.Context, datas []*dbop.UserFriend) (res sql.Result, err error)
+
+	Update(ctx context.Context, data *dbop.UserFriend) (res sql.Result, err error)
+	Upsert(ctx context.Context, data *dbop.UserFriend) (res sql.Result, err error)
+	UpsertMany(ctx context.Context, datas []*dbop.UserFriend) (res sql.Result, err error)
+
+	Find(ctx context.Context, uid int64, fid int64) (data *dbop.UserFriend, err error)
+	FindEx(ctx context.Context, uid int64, fid int64) (data *dbop.UserFriendEx, err error)
+	Delete(ctx context.Context, uid int64, fid int64) (res sql.Result, err error)
+
+	FindByKey(ctx context.Context, id UserFriendKey) (data *dbop.UserFriend, err error)
+	FindExByKey(ctx context.Context, id UserFriendKey) (data *dbop.UserFriendEx, err error)
+	DeleteByKey(ctx context.Context, id UserFriendKey) (res sql.Result, err error)
+
+	FindByKeyArray(ctx context.Context, ids []UserFriendKey) (datas []*dbop.UserFriend, err error)
+	FindExByKeyArray(ctx context.Context, ids []UserFriendKey) (datas []*dbop.UserFriendEx, err error)
+	DeleteByKeyArray(ctx context.Context, ids []UserFriendKey) (res sql.Result, err error)
+
+	FindByIndexUid(ctx context.Context, uid int64, limit, offset int) (datas []*dbop.UserFriend, err error)
+	FindExByIndexUid(ctx context.Context, uid int64, limit, offset int) (datas []*dbop.UserFriendEx, err error)
+	CountByIndexUid(ctx context.Context, uid int64) (count int, err error)
+	DeleteByIndexUid(ctx context.Context, uid int64) (res sql.Result, err error)
+
+	Where(bufSize int) *UserFriendWhereStmt
+	Select(ctx context.Context, where *UserFriendWhereStmt) (datas []*dbop.UserFriend, err error)
+	SelectEx(ctx context.Context, where *UserFriendWhereStmt) (datas []*dbop.UserFriendEx, err error)
+	Count(ctx context.Context, where *UserFriendWhereStmt) (count int, err error)
+
+	DeleteMany(ctx context.Context, where *UserFriendWhereStmt) (res sql.Result, err error)
+
+	RangeAll(ctx context.Context, where *UserFriendWhereStmt, f func(ctx context.Context, row *dbop.UserFriend) bool) error
+	RangeAllEx(ctx context.Context, where *UserFriendWhereStmt, f func(ctx context.Context, row *dbop.UserFriendEx) bool) error
+	AllData(ctx context.Context, where *UserFriendWhereStmt) (datas []*dbop.UserFriend, err error)
+	AllDataEx(ctx context.Context, where *UserFriendWhereStmt) (datas []*dbop.UserFriendEx, err error)
+
+	// use for custom named sql
+	DB() *sqlx.DB
+}
+#+end_src
+ 
 *** 操作日志
-log 
+#+begin_src protobuf
+message user_xx_log {
+	sql.engine = "MyISAM"
+	sql.ex = false // 不生成扩展结构体
+	sql.update = false // 不生成update方法
+	sql.upsert = false // 不生成upsret方法
+	int64 id = 1 {
+		sql.auto_incr = true
+      sql.pk = true
+	}
+	int64 uid = 2;
+	int64 xx = 3;
+	string x2 = 4;
+	int64 create_stamp = 5{ // 记录写入时间
+		sql.type = "timestamp default current_timestamp"
+	}
+}
+#+end_src
+
+#+begin_src go
+type UserXxLogKey = int64
+
+type UserXxLogOperation interface {
+	Insert(ctx context.Context, data *dbop.UserXxLog) (res sql.Result, err error)
+	InsertMany(ctx context.Context, datas []*dbop.UserXxLog) (res sql.Result, err error)
+
+	Find(ctx context.Context, id int64) (data *dbop.UserXxLog, err error)
+	Delete(ctx context.Context, id int64) (res sql.Result, err error)
+
+	FindByKey(ctx context.Context, id UserXxLogKey) (data *dbop.UserXxLog, err error)
+	DeleteByKey(ctx context.Context, id UserXxLogKey) (res sql.Result, err error)
+
+	FindByKeyArray(ctx context.Context, ids []UserXxLogKey) (datas []*dbop.UserXxLog, err error)
+	DeleteByKeyArray(ctx context.Context, ids []UserXxLogKey) (res sql.Result, err error)
+
+	Where(bufSize int) *UserXxLogWhereStmt
+	Select(ctx context.Context, where *UserXxLogWhereStmt) (datas []*dbop.UserXxLog, err error)
+	Count(ctx context.Context, where *UserXxLogWhereStmt) (count int, err error)
+
+	DeleteMany(ctx context.Context, where *UserXxLogWhereStmt) (res sql.Result, err error)
+
+	RangeAll(ctx context.Context, where *UserXxLogWhereStmt, f func(ctx context.Context, row *dbop.UserXxLog) bool) error
+	AllData(ctx context.Context, where *UserXxLogWhereStmt) (datas []*dbop.UserXxLog, err error)
+
+	// use for custom named sql
+	DB() *sqlx.DB
+}
+#+end_src

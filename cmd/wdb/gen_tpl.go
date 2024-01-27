@@ -22,45 +22,45 @@ type {{Title $tbl.Name}}Operation interface {
 	Insert(ctx context.Context, data *{{Title $tbl.Struct}}) (res sql.Result, err error)
 	InsertMany(ctx context.Context, datas []*{{Title $tbl.Struct}}) (res sql.Result, err error) 
 
-{{if $tbl.PrimaryKey}}
-	Update(ctx context.Context, data *{{Title $tbl.Struct}}) (res sql.Result, err error) 
+{{if $tbl.PrimaryKey}}{{if $tbl.GenUpdate}}
+	Update(ctx context.Context, data *{{Title $tbl.Struct}}) (res sql.Result, err error){{end}}{{if $tbl.GenUpsert }} 
 	Upsert(ctx context.Context, data *{{Title $tbl.Struct}}) (res sql.Result, err error) 
-	UpsertMany(ctx context.Context, datas []*{{Title $tbl.Struct}}) (res sql.Result, err error)
+	UpsertMany(ctx context.Context, datas []*{{Title $tbl.Struct}}) (res sql.Result, err error){{end}}
 {{end}}
 
 {{if $tbl.PrimaryKey}}
-	Find(ctx context.Context, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.Name}} {{$col.GoType}}{{end}}) (data *{{Title $tbl.Struct}}, err error) 
-	FindEx(ctx context.Context, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.Name}} {{$col.GoType}}{{end}}) (data *{{Title $tbl.Struct}}Ex, err error)
+	Find(ctx context.Context, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.Name}} {{$col.GoType}}{{end}}) (data *{{Title $tbl.Struct}}, err error){{ if $tbl.GenEx }}
+	FindEx(ctx context.Context, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.Name}} {{$col.GoType}}{{end}}) (data *{{Title $tbl.Struct}}Ex, err error){{end}}
 	Delete(ctx context.Context, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.Name}} {{$col.GoType}}{{end}}) (res sql.Result, err error)
 
-	FindByKey(ctx context.Context, id {{Title $tbl.Name}}Key) (data *{{Title $tbl.Struct}}, err error)
-	FindExByKey(ctx context.Context, id {{Title $tbl.Name}}Key) (data *{{Title $tbl.Struct}}Ex, err error) 
+	FindByKey(ctx context.Context, id {{Title $tbl.Name}}Key) (data *{{Title $tbl.Struct}}, err error){{ if $tbl.GenEx }}
+	FindExByKey(ctx context.Context, id {{Title $tbl.Name}}Key) (data *{{Title $tbl.Struct}}Ex, err error){{end}}
 	DeleteByKey(ctx context.Context, id {{Title $tbl.Name}}Key) (res sql.Result, err error)
 
-	FindByKeyArray(ctx context.Context, ids []{{Title $tbl.Name}}Key) (datas []*{{Title $tbl.Struct}}, err error)
-	FindExByKeyArray(ctx context.Context, ids []{{Title $tbl.Name}}Key) (datas []*{{Title $tbl.Struct}}Ex, err error) 
+	FindByKeyArray(ctx context.Context, ids []{{Title $tbl.Name}}Key) (datas []*{{Title $tbl.Struct}}, err error){{ if $tbl.GenEx }}
+	FindExByKeyArray(ctx context.Context, ids []{{Title $tbl.Name}}Key) (datas []*{{Title $tbl.Struct}}Ex, err error){{end}}
 	DeleteByKeyArray(ctx context.Context, ids []{{Title $tbl.Name}}Key) (res sql.Result, err error)
 {{end}}
 
 
 {{- range $i,$idx := $tbl.Index }}
-	FindByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}}limit,offset int) (datas []*{{Title $tbl.Struct}}, err error)
-	FindExByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}}limit,offset int) (datas []*{{Title $tbl.Struct}}Ex, err error)
+	FindByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}}limit,offset int) (datas []*{{Title $tbl.Struct}}, err error){{ if $tbl.GenEx }}
+	FindExByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}}limit,offset int) (datas []*{{Title $tbl.Struct}}Ex, err error){{end}}
 	CountByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}}) (count int, err error) 
 	DeleteByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}}) (res sql.Result, err error) 
 {{end}}
 
 	Where(bufSize int) *{{Title $tbl.Name}}WhereStmt 
-	Select(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}, err error) 
-	SelectEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}Ex, err error) 
+	Select(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}, err error){{ if $tbl.GenEx }}
+	SelectEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}Ex, err error) {{end}}
 	Count(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (count int, err error)
 
 	DeleteMany(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (res sql.Result, err error) 
 
-	RangeAll(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt, f func(ctx context.Context, row *{{Title $tbl.Struct}}) bool) error
-	RangeAllEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt, f func(ctx context.Context, row *{{Title $tbl.Struct}}Ex) bool) error 
-	AllData(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}, err error)
-	AllDataEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}Ex, err error)
+	RangeAll(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt, f func(ctx context.Context, row *{{Title $tbl.Struct}}) bool) error{{ if $tbl.GenEx }}
+	RangeAllEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt, f func(ctx context.Context, row *{{Title $tbl.Struct}}Ex) bool) error {{end}}
+	AllData(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}, err error){{ if $tbl.GenEx }}
+	AllDataEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}Ex, err error){{end}}
 
 	// use for custom named sql 
 	DB() *sqlx.DB
@@ -111,12 +111,12 @@ func Sync{{Title $tbl.Name}}DBTable(ctx context.Context, db *sqlx.DB) (err error
 	err = {{$tbl.SvcDB}}.SyncTableColumns(context.Background(), db, "{{$tbl.SqlTable}}", {{Title $tbl.Name}}SQL_Create, {{Title $tbl.Name}}SQL_TableColumns)
 	if err != nil {
 		return fmt.Errorf("sync {{$tbl.DB}}.{{$tbl.SqlTable}} table, sync columns failed, %w", err)
-	}
+	}{{if $tbl.Index }} 
 	// sync table index
 	err = {{$tbl.SvcDB}}.SyncTableIndex(context.Background(), db, "{{$tbl.SqlTable}}", {{Title $tbl.Name}}SQL_TableIndex)
 	if err != nil {
 		return fmt.Errorf("sync {{$tbl.DB}}.{{$tbl.SqlTable}} table, sync index failed, %w", err)
-	}
+	}{{end}}
 	return
 }
 
@@ -131,7 +131,7 @@ func {{Title $tbl.Name}}ToPrimaryKeys(rows []*{{Title $tbl.Struct}}) (ids []{{Ti
 	}
 	return
 }
-
+{{ if $tbl.GenEx }}
 func {{Title $tbl.Name}}ExToPrimaryKeysEx(rows []*{{Title $tbl.Struct}}Ex) (ids []{{Title $tbl.Name}}Key) {
 	ids = make([]{{Title $tbl.Name}}Key, 0, len(rows))
 	for _, v := range rows { {{- if eq $ksize 1 }} {{ $id := index $key 0 }}
@@ -141,7 +141,7 @@ func {{Title $tbl.Name}}ExToPrimaryKeysEx(rows []*{{Title $tbl.Struct}}Ex) (ids 
 		}) {{ end }}
 	}
 	return
-}
+}{{end}}
 {{end}}
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -158,14 +158,14 @@ const (
 	{{Title $tbl.Name}}SQL_UpsertUpdate  = " on duplicate key update {{range $i,$col := $tbl.AllColumns true}}{{Comma $i}}{{$col.SqlName}}=values({{$col.SqlName}}){{end}}"
 	{{Title $tbl.Name}}SQL_Update        = "update {{$tbl.SqlTable}} set {{range $i,$col := $tbl.Columns}}{{Comma $i}}{{$col.SqlName}}=?{{end}} where {{range $i,$col := $tbl.PrimaryKey}}{{And $i}}{{$col.SqlName}}=?{{end}}" {{end}}
 	{{Title $tbl.Name}}SQL_Delete        = "delete from {{$tbl.SqlTable}}"
-	{{Title $tbl.Name}}SQL_Find          = "select {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}} from {{$tbl.SqlTable}}"
-	{{Title $tbl.Name}}SQL_FindRow       = "select {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}},{{BackQuote "modify_stamp"}},{{BackQuote "create_stamp"}} from {{$tbl.SqlTable}}"
+	{{Title $tbl.Name}}SQL_Find          = "select {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}} from {{$tbl.SqlTable}}"{{ if $tbl.GenEx }}
+	{{Title $tbl.Name}}SQL_FindRow       = "select {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{$col.SqlName}}{{end}},{{BackQuote "modify_stamp"}},{{BackQuote "create_stamp"}} from {{$tbl.SqlTable}}"{{end}}
 	{{Title $tbl.Name}}SQL_Count         = "select count(*) from {{$tbl.SqlTable}}"
 	{{Title $tbl.Name}}SQL_Create        = "create table {{$tbl.SqlTable}} ("+ {{range $i,$col :=  $tbl.AllColumns false}}
-		"{{$col.SqlName}} {{$col.SqlType}}," + {{end}}
-		"{{BackQuote "modify_stamp"}} timestamp default current_timestamp on update current_timestamp," +
-		"{{BackQuote "create_stamp"}} timestamp default current_timestamp" + {{if $tbl.PrimaryKey }} "," +
-		"PRIMARY KEY ( {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.SqlName}}{{end}})" + {{end}}
+		"{{Comma $i}}{{$col.SqlName}} {{$col.SqlType}}" + {{end}} {{ if $tbl.GenEx }}
+		",{{BackQuote "modify_stamp"}} timestamp default current_timestamp on update current_timestamp" +
+		",{{BackQuote "create_stamp"}} timestamp default current_timestamp" + {{end}} {{if $tbl.PrimaryKey }}
+		",PRIMARY KEY ( {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.SqlName}}{{end}})" + {{end}}
 		") ENGINE={{$tbl.Engine}} DEFAULT CHARSET={{$tbl.Charset}} COLLATE={{$tbl.Collate}};"
 )
 
@@ -184,14 +184,14 @@ var (
 type x{{Title $tbl.Name}}Operation struct {
 	db      *sqlx.DB
 	insert  *sql.Stmt{{ if $tbl.AutoIncr}}
-	insert2 *sql.Stmt // increment id {{end}} {{if $tbl.PrimaryKey}}
-	update  *sql.Stmt
-	upsert  *sql.Stmt 
+	insert2 *sql.Stmt // increment id {{end}} {{if $tbl.PrimaryKey}}{{if $tbl.GenUpdate}}
+	update  *sql.Stmt{{end}}{{if $tbl.GenUpsert }}
+	upsert  *sql.Stmt{{end}}
 	delete  *sql.Stmt
-	find    *sql.Stmt
-	findRow *sql.Stmt {{end}} {{- range $i,$idx := $tbl.Index }}
-	idx{{Title $idx.Name}}Find *sql.Stmt
-	idx{{Title $idx.Name}}FindEx *sql.Stmt
+	find    *sql.Stmt {{ if $tbl.GenEx }}
+	findRow *sql.Stmt {{end}} {{end}} {{- range $i,$idx := $tbl.Index }}
+	idx{{Title $idx.Name}}Find *sql.Stmt{{ if $tbl.GenEx }}
+	idx{{Title $idx.Name}}FindEx *sql.Stmt{{end}}
 	idx{{Title $idx.Name}}Count *sql.Stmt
 	idx{{Title $idx.Name}}Delete *sql.Stmt{{end}}
 }
@@ -208,15 +208,15 @@ func New{{Title $tbl.Name}}Operation(db *sqlx.DB) (_ *x{{Title $tbl.Name}}Operat
 	t.insert2, err = db.Prepare({{Title $tbl.Name}}SQL_Insert2)
 	if err != nil {
 		return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} insert2 failed,%w", err)
-	}{{end}} {{if $tbl.PrimaryKey}}
+	}{{end}} {{if $tbl.PrimaryKey}}{{if $tbl.GenUpdate}}
 	t.update, err = db.Prepare({{Title $tbl.Name}}SQL_Update)
 	if err != nil {
 		return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} update failed,%w", err)
-	}
+	}{{end}}{{if $tbl.GenUpsert }}
 	t.upsert, err = db.Prepare({{Title $tbl.Name}}SQL_Upsert + {{Title $tbl.Name}}SQL_UpsertUpdate)
 	if err != nil {
 		return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} upsert failed,%w", err)
-	}
+	}{{end}}
 	t.delete, err = db.Prepare({{Title $tbl.Name}}SQL_Delete + " where {{range $i,$col := $tbl.PrimaryKey}}{{And $i}}{{$col.SqlName}}=?{{end}}")
 	if err != nil {
 		return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} delete failed,%w", err)
@@ -224,11 +224,11 @@ func New{{Title $tbl.Name}}Operation(db *sqlx.DB) (_ *x{{Title $tbl.Name}}Operat
 	t.find, err = db.Prepare({{Title $tbl.Name}}SQL_Find + " where {{range $i,$col := $tbl.PrimaryKey}}{{And $i}}{{$col.SqlName}}=?{{end}}")
 	if err != nil {
 		return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} find failed,%w", err)
-	}
+	}{{ if $tbl.GenEx }}
 	t.findRow, err = db.Prepare({{Title $tbl.Name}}SQL_FindRow + " where {{range $i,$col := $tbl.PrimaryKey}}{{And $i}}{{$col.SqlName}}=?{{end}}")
 	if err != nil {
 		return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} findex failed,%w", err)
-	}{{end}}
+	}{{end}} {{end}}
 
 	return t, nil
 }
@@ -236,11 +236,11 @@ func New{{Title $tbl.Name}}Operation(db *sqlx.DB) (_ *x{{Title $tbl.Name}}Operat
 func (t *x{{Title $tbl.Name}}Operation) Insert(ctx context.Context, data *{{Title $tbl.Struct}}) (res sql.Result, err error) { {{ if $tbl.AutoIncr}}
 	// auto increment field
 	if data.{{Title $tbl.AutoIncr.Name}} != 0 {
-		res, err = t.insert2.ExecContext(ctx, {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}data.{{Title $col.Name}}{{end}})
+		res, err = t.insert2.ExecContext(ctx, {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}data.{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}})
 	} else {
-		res, err = t.insert.ExecContext(ctx, {{range $i,$col := $tbl.AllColumns true}}{{Comma $i}}data.{{Title $col.Name}}{{end}})
+		res, err = t.insert.ExecContext(ctx, {{range $i,$col := $tbl.AllColumns true}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}data.{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}})
 	}{{else}}
-	res, err = t.insert.ExecContext(ctx, {{range $i,$col := $tbl.AllColumns true}}{{Comma $i}}data.{{Title $col.Name}}{{end}}) {{end}}
+	res, err = t.insert.ExecContext(ctx, {{range $i,$col := $tbl.AllColumns true}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}data.{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}}) {{end}}
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} insert failed,%w", err)
 	}
@@ -274,7 +274,7 @@ func (t *x{{Title $tbl.Name}}Operation) InsertMany(ctx context.Context, datas []
 		args := make([]any, 0, len(datas)*{{$all := $tbl.AllColumns false}}{{len $all}})
 		for i := 0; i < len(datas); i++ {
 			data := datas[i]
-			args = append(args, {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}data.{{Title $col.Name}}{{end}})
+			args = append(args, {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}data.{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}})
 		}
 		res, err = t.db.DB.ExecContext(ctx, buf.String(), args...)
 		if err != nil {
@@ -292,7 +292,7 @@ func (t *x{{Title $tbl.Name}}Operation) InsertMany(ctx context.Context, datas []
 	args := make([]any, 0, len(datas)*{{$all := $tbl.AllColumns true}}{{len $all}})
 	for i := 0; i < len(datas); i++ {
 		data := datas[i]
-		args = append(args, {{range $i,$col := $tbl.AllColumns true}}{{Comma $i}}data.{{Title $col.Name}}{{end}})
+		args = append(args, {{range $i,$col := $tbl.AllColumns true}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}data.{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}})
 	}
 	res, err = t.db.DB.ExecContext(ctx, buf.String(), args...)
 	if err != nil {
@@ -301,13 +301,13 @@ func (t *x{{Title $tbl.Name}}Operation) InsertMany(ctx context.Context, datas []
 	return
 }
 
-{{if $tbl.PrimaryKey}}
+{{if $tbl.PrimaryKey}}{{if $tbl.GenUpdate}}
 func (t *x{{Title $tbl.Name}}Operation) Update(ctx context.Context, data *{{Title $tbl.Struct}}) (res sql.Result, err error) { {{- if $tbl.AutoIncr}}
 	// auto increment field
 	if data.{{Title $tbl.AutoIncr.Name}} == 0 {
 		return nil, errors.New("update {{$tbl.SqlTable}} not set primary key")
 	}{{end}}
-	res, err = t.update.ExecContext(ctx, {{range $i,$col := $tbl.Columns}}{{Comma $i}}data.{{Title $col.Name}}{{end}}, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}data.{{Title $col.Name}}{{end}})
+	res, err = t.update.ExecContext(ctx, {{range $i,$col := $tbl.Columns}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}data.{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}}, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}data.{{Title $col.Name}}{{end}})
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} update failed,%w", err)
 	}
@@ -315,13 +315,14 @@ func (t *x{{Title $tbl.Name}}Operation) Update(ctx context.Context, data *{{Titl
 	return
 }
 
+{{end}}{{if $tbl.GenUpsert }}
 func (t *x{{Title $tbl.Name}}Operation) Upsert(ctx context.Context, data *{{Title $tbl.Struct}}) (res sql.Result, err error) { {{ if $tbl.AutoIncr}}
 	// auto increment field
 	if data.{{Title $tbl.AutoIncr.Name}} == 0 {
 		return t.Insert(ctx, data)
 	}{{end}}
 
-	res, err = t.upsert.ExecContext(ctx, {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}data.{{Title $col.Name}}{{end}})
+	res, err = t.upsert.ExecContext(ctx, {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}data.{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}})
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} upsert failed,%w", err)
 	}
@@ -354,7 +355,7 @@ func (t *x{{Title $tbl.Name}}Operation) UpsertMany(ctx context.Context, datas []
 	args := make([]any, 0, len(datas)* {{$all := $tbl.AllColumns false}}{{len $all}})
 	for i := 0; i < len(datas); i++ {
 		data := datas[i]
-		args = append(args, {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}data.{{Title $col.Name}}{{end}})
+		args = append(args, {{range $i,$col := $tbl.AllColumns false}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}data.{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}})
 	}
 	res, err = t.db.DB.ExecContext(ctx, buf.String(), args...)
 	if err != nil {
@@ -363,11 +364,12 @@ func (t *x{{Title $tbl.Name}}Operation) UpsertMany(ctx context.Context, datas []
 	return
 }
 {{end}}
+{{end}}
 
 {{if $tbl.PrimaryKey}}
 // find by primary key
 func (t *x{{Title $tbl.Name}}Operation) Find(ctx context.Context, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.Name}} {{$col.GoType}}{{end}}) (data *{{Title $tbl.Struct}}, err error) {
-	rows, err := t.find.QueryContext(ctx, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.Name}}{{end}})
+	rows, err := t.find.QueryContext(ctx, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}{{$col.Name}}{{if $col.Marshal }}){{end}}{{end}})
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} find failed,%w", err)
 	}
@@ -377,9 +379,9 @@ func (t *x{{Title $tbl.Name}}Operation) Find(ctx context.Context, {{range $i,$co
 	}
 	return
 }
-
+{{ if $tbl.GenEx }}
 func (t *x{{Title $tbl.Name}}Operation) FindEx(ctx context.Context, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.Name}} {{$col.GoType}}{{end}}) (data *{{Title $tbl.Struct}}Ex, err error) {
-	rows, err := t.findRow.QueryContext(ctx, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.Name}}{{end}})
+	rows, err := t.findRow.QueryContext(ctx, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}{{$col.Name}}{{if $col.Marshal }}){{end}}{{end}})
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} findex failed,%w", err)
 	}
@@ -389,7 +391,7 @@ func (t *x{{Title $tbl.Name}}Operation) FindEx(ctx context.Context, {{range $i,$
 	}
 	return
 }
-
+{{end}}
 func (t *x{{Title $tbl.Name}}Operation) Delete(ctx context.Context, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.Name}} {{$col.GoType}}{{end}}) (res sql.Result, err error) {
 	res, err = t.delete.ExecContext(ctx, {{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{$col.Name}}{{end}})
 	if err != nil {
@@ -401,7 +403,7 @@ func (t *x{{Title $tbl.Name}}Operation) Delete(ctx context.Context, {{range $i,$
 
 // find by primary key
 func (t *x{{Title $tbl.Name}}Operation) FindByKey(ctx context.Context, id {{Title $tbl.Name}}Key) (data *{{Title $tbl.Struct}}, err error) {
-	rows, err := t.find.QueryContext(ctx, {{if eq $ksize 1}}id{{else}}{{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}id.{{Title $col.Name}}{{end}}{{end}})
+	rows, err := t.find.QueryContext(ctx, {{if eq $ksize 1}}id{{else}}{{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}id.{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}}{{end}})
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} find_by_key failed,%w", err)
 	}
@@ -412,9 +414,9 @@ func (t *x{{Title $tbl.Name}}Operation) FindByKey(ctx context.Context, id {{Titl
 	}
 	return
 }
-
+{{ if $tbl.GenEx }}
 func (t *x{{Title $tbl.Name}}Operation) FindExByKey(ctx context.Context, id {{Title $tbl.Name}}Key) (data *{{Title $tbl.Struct}}Ex, err error) {
-	rows, err := t.findRow.QueryContext(ctx, {{if eq $ksize 1}}id{{else}}{{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}id.{{Title $col.Name}}{{end}}{{end}})
+	rows, err := t.findRow.QueryContext(ctx, {{if eq $ksize 1}}id{{else}}{{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}id.{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}}{{end}})
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} findex_by_key failed,%w", err)
 	}
@@ -425,10 +427,10 @@ func (t *x{{Title $tbl.Name}}Operation) FindExByKey(ctx context.Context, id {{Ti
 	}
 	return
 }
-
+{{end}}
 
 func (t *x{{Title $tbl.Name}}Operation) DeleteByKey(ctx context.Context, id {{Title $tbl.Name}}Key) (res sql.Result, err error) {
-	res, err = t.delete.ExecContext(ctx, {{if eq $ksize 1}}id{{else}}{{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}id.{{Title $col.Name}}{{end}}{{end}})
+	res, err = t.delete.ExecContext(ctx, {{if eq $ksize 1}}id{{else}}{{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}id.{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}}{{end}})
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} del_by_key failed,%w", err)
 	}
@@ -458,7 +460,7 @@ func (t *x{{Title $tbl.Name}}Operation) FindByKeyArray(ctx context.Context, ids 
 	
 	args := make([]any, 0, len(ids)*{{len $tbl.PrimaryKey}})
 	for i := 0; i < len(ids); i++ {
-		args = append(args, {{if eq $ksize 1}}ids[i]{{else}}{{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}ids[i].{{Title $col.Name}}{{end}}{{end}})
+		args = append(args, {{if eq $ksize 1}}ids[i]{{else}}{{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}ids[i].{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}}{{end}})
 	}
 	rows, err := t.db.DB.QueryContext(ctx, buf.String(), args...)
 	if err != nil {
@@ -475,7 +477,7 @@ func (t *x{{Title $tbl.Name}}Operation) FindByKeyArray(ctx context.Context, ids 
 	}
 	return
 }
-
+{{ if $tbl.GenEx }}
 func (t *x{{Title $tbl.Name}}Operation) FindExByKeyArray(ctx context.Context, ids []{{Title $tbl.Name}}Key) (datas []*{{Title $tbl.Struct}}Ex, err error) {
 	switch len(ids) {
 	case 0:
@@ -497,7 +499,7 @@ func (t *x{{Title $tbl.Name}}Operation) FindExByKeyArray(ctx context.Context, id
 	
 	args := make([]any, 0, len(ids)*{{len $tbl.PrimaryKey}})
 	for i := 0; i < len(ids); i++ {
-		args = append(args, {{if eq $ksize 1}}ids[i]{{else}}{{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}ids[i].{{Title $col.Name}}{{end}}{{end}})
+		args = append(args, {{if eq $ksize 1}}ids[i]{{else}}{{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}ids[i].{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}}{{end}})
 	}
 	rows, err := t.db.DB.QueryContext(ctx, buf.String(), args...)
 	if err != nil {
@@ -514,7 +516,7 @@ func (t *x{{Title $tbl.Name}}Operation) FindExByKeyArray(ctx context.Context, id
 	}
 	return
 }
-
+{{end}}
 
 func (t *x{{Title $tbl.Name}}Operation) DeleteByKeyArray(ctx context.Context, ids []{{Title $tbl.Name}}Key) (res sql.Result, err error) {
 	switch len(ids) {
@@ -533,7 +535,7 @@ func (t *x{{Title $tbl.Name}}Operation) DeleteByKeyArray(ctx context.Context, id
 	
 	args := make([]any, 0, len(ids)*{{len $tbl.PrimaryKey}})
 	for i := 0; i < len(ids); i++ {
-		args = append(args, {{if eq $ksize 1}}ids[i]{{else}}{{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}ids[i].{{Title $col.Name}}{{end}}{{end}})
+		args = append(args, {{if eq $ksize 1}}ids[i]{{else}}{{range $i,$col := $tbl.PrimaryKey}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}ids[i].{{Title $col.Name}}{{if $col.Marshal }}){{end}}{{end}}{{end}})
 	}
 	res, err = t.db.DB.ExecContext(ctx, buf.String(), args...)
 	if err != nil {
@@ -552,7 +554,7 @@ func (t *x{{Title $tbl.Name}}Operation) FindByIndex{{Title $idx.Name}}(ctx conte
 			return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} find_by_index_{{$idx.Name}} failed,%w", err)
 		}
 	}
-	rows, err := t.idx{{Title $idx.Name}}Find.QueryContext(ctx, {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.Name}}{{end}}, offset, limit)
+	rows, err := t.idx{{Title $idx.Name}}Find.QueryContext(ctx, {{range $i,$col := $idx.Columns}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}{{$col.Name}}{{if $col.Marshal }}){{end}}{{end}}, offset, limit)
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} find_by_index_{{$idx.Name}} failed,%w", err)
 	}
@@ -567,6 +569,8 @@ func (t *x{{Title $tbl.Name}}Operation) FindByIndex{{Title $idx.Name}}(ctx conte
 	}
 	return
 }
+
+{{ if $tbl.GenEx }}
 func (t *x{{Title $tbl.Name}}Operation) FindExByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}} limit,offset int) (datas []*{{Title $tbl.Struct}}Ex, err error) {
 	if t.idx{{Title $idx.Name}}FindEx == nil {
 		t.idx{{Title $idx.Name}}FindEx, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_FindRow + " where {{range $i,$col := $idx.Columns}}{{And $i}}{{$col.SqlName}}=?{{end}} limit ?,?")
@@ -574,7 +578,7 @@ func (t *x{{Title $tbl.Name}}Operation) FindExByIndex{{Title $idx.Name}}(ctx con
 			return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} findex_by_index_{{$idx.Name}} failed,%w", err)
 		}
 	}
-	rows, err := t.idx{{Title $idx.Name}}FindEx.QueryContext(ctx, {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.Name}}{{end}}, offset, limit)
+	rows, err := t.idx{{Title $idx.Name}}FindEx.QueryContext(ctx, {{range $i,$col := $idx.Columns}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}{{$col.Name}}{{if $col.Marshal }}){{end}}{{end}}, offset, limit)
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} findex_by_index_{{$idx.Name}} failed,%w", err)
 	}
@@ -588,7 +592,8 @@ func (t *x{{Title $tbl.Name}}Operation) FindExByIndex{{Title $idx.Name}}(ctx con
 		datas = append(datas, data)
 	}
 	return
-}
+}{{end}}
+
 func (t *x{{Title $tbl.Name}}Operation) CountByIndex{{Title $idx.Name}}(ctx context.Context, {{range $i,$col := $idx.Columns}}{{$col.Name}} {{$col.GoType}},{{end}}) (count int, err error) {
 	if t.idx{{Title $idx.Name}}Count == nil {
 		t.idx{{Title $idx.Name}}Count, err = t.db.PrepareContext(ctx, {{Title $tbl.Name}}SQL_Count + " where {{range $i,$col := $idx.Columns}}{{And $i}}{{$col.SqlName}}=?{{end}}")
@@ -596,7 +601,7 @@ func (t *x{{Title $tbl.Name}}Operation) CountByIndex{{Title $idx.Name}}(ctx cont
 			return 0, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} count_by_index_{{$idx.Name}} failed,%w", err)
 		}
 	}
-	err = t.idx{{Title $idx.Name}}Count.QueryRowContext(ctx, {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.Name}}{{end}}).Scan(&count)
+	err = t.idx{{Title $idx.Name}}Count.QueryRowContext(ctx, {{range $i,$col := $idx.Columns}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}{{$col.Name}}{{if $col.Marshal }}){{end}}{{end}}).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} count_by_index_{{$idx.Name}} failed,%w", err)
 	}
@@ -610,7 +615,7 @@ if t.idx{{Title $idx.Name}}Delete == nil {
 			return nil, fmt.Errorf("prepare {{$tbl.DB}}.{{$tbl.SqlTable}} delete_by_index_{{$idx.Name}} failed,%w", err)
 		}
 	}
-	res, err = t.idx{{Title $idx.Name}}Delete.ExecContext(ctx, {{range $i,$col := $idx.Columns}}{{Comma $i}}{{$col.Name}}{{end}})
+	res, err = t.idx{{Title $idx.Name}}Delete.ExecContext(ctx, {{range $i,$col := $idx.Columns}}{{Comma $i}}{{if $col.Marshal }}{{Title $tbl.Name}}{{Title $col.Name}}Marshal({{end}}{{$col.Name}}{{if $col.Marshal }}){{end}}{{end}})
 	if err != nil {
 		return nil, fmt.Errorf("exec {{$tbl.DB}}.{{$tbl.SqlTable}} delete_by_index_{{$idx.Name}} failed,%w", err)
 	}
@@ -647,6 +652,7 @@ func (t *x{{Title $tbl.Name}}Operation) Select(ctx context.Context, where *{{Tit
 	return
 }
 
+{{ if $tbl.GenEx }}
 func (t *x{{Title $tbl.Name}}Operation) SelectEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}Ex, err error) {
 	var findSql = {{Title $tbl.Name}}SQL_FindRow
 	if where != nil {
@@ -668,6 +674,7 @@ func (t *x{{Title $tbl.Name}}Operation) SelectEx(ctx context.Context, where *{{T
 	}
 	return
 }
+{{end}}
 
 func (t *x{{Title $tbl.Name}}Operation) Count(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (count int, err error) {
 	var findSql = {{Title $tbl.Name}}SQL_Count
@@ -742,6 +749,7 @@ func (t *x{{Title $tbl.Name}}Operation) RangeAll(ctx context.Context, where *{{T
 	return nil
 }
 
+{{ if $tbl.GenEx }}
 func (t *x{{Title $tbl.Name}}Operation) RangeAllEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt, f func(ctx context.Context, row *{{Title $tbl.Struct}}Ex) bool) error {
 	var findSql = {{Title $tbl.Name}}SQL_FindRow
 	limit := 0
@@ -784,6 +792,7 @@ func (t *x{{Title $tbl.Name}}Operation) RangeAllEx(ctx context.Context, where *{
 	}
 	return nil
 }
+{{end}}
 
 func (t *x{{Title $tbl.Name}}Operation) AllData(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}, err error) {
 	var findSql = {{Title $tbl.Name}}SQL_Find
@@ -825,6 +834,7 @@ func (t *x{{Title $tbl.Name}}Operation) AllData(ctx context.Context, where *{{Ti
 	return
 }
 
+{{ if $tbl.GenEx }}
 func (t *x{{Title $tbl.Name}}Operation) AllDataEx(ctx context.Context, where *{{Title $tbl.Name}}WhereStmt) (datas []*{{Title $tbl.Struct}}Ex, err error) {
 	var findSql = {{Title $tbl.Name}}SQL_FindRow
 	limit := 0
@@ -864,6 +874,7 @@ func (t *x{{Title $tbl.Name}}Operation) AllDataEx(ctx context.Context, where *{{
 	}
 	return
 }
+{{end}}
 
 func (t *x{{Title $tbl.Name}}Operation) DB() *sqlx.DB {
 	return t.db
@@ -942,7 +953,7 @@ func scan{{Title $tbl.Name}}(rows *sql.Rows) (data *{{Title $tbl.Struct}}, err e
 	}{{end}}
 	return data, nil 
 }
-
+{{ if $tbl.GenEx }}
 func scan{{Title $tbl.Name}}Ex(rows *sql.Rows) (data *{{Title $tbl.Struct}}Ex, err error) { 
 	var values [{{len $all}}+2]sql.RawBytes
 	err = rows.Scan({{range $i,$col := $tbl.AllColumns false}}&values[{{$i}}],{{end}}&values[{{len $all}}],&values[{{len $all}}+1])
@@ -965,7 +976,7 @@ func scan{{Title $tbl.Name}}Ex(rows *sql.Rows) (data *{{Title $tbl.Struct}}Ex, e
 	}
 	return data, nil
 }
-
+{{end}}
 
 ////////////////////////////////////////////////////////////////////////////////
 // named sql
@@ -1016,7 +1027,7 @@ func (x *{{Title $tbl.Name}}NamedInsert) {{Title $col.Name}}() *{{Title $tbl.Nam
 	return x
 }
 {{end}}
-
+{{ if $tbl.GenEx }}
 func (x *{{Title $tbl.Name}}NamedInsert) ModifyStamp() *{{Title $tbl.Name}}NamedInsert {
 	x.list = append(x.list, "{{BackQuote "modify_stamp"}}")
 	x.values = append(x.values, ":modify_stamp")
@@ -1028,6 +1039,7 @@ func (x *{{Title $tbl.Name}}NamedInsert) CreateStamp() *{{Title $tbl.Name}}Named
 	x.values = append(x.values, ":create_stamp")
 	return x
 }
+{{end}}
 
 func (x *{{Title $tbl.Name}}NamedInsert) ToSQL() string {
 	x.buf.Write([]byte("insert {{$tbl.SqlTable}}("))
@@ -1065,7 +1077,7 @@ func (x *{{Title $tbl.Name}}NamedUpdate) {{Title $col.Name}}() *{{Title $tbl.Nam
 	return x
 }
 {{end}}
-
+{{ if $tbl.GenEx }}
 func (x *{{Title $tbl.Name}}NamedUpdate) ModifyStamp() *{{Title $tbl.Name}}NamedUpdate {
 	if *x.n > 0 {
 		x.buf.WriteByte(',')
@@ -1091,7 +1103,7 @@ func (x *{{Title $tbl.Name}}NamedUpdate) CreateStamp() *{{Title $tbl.Name}}Named
 	*x.n++
 	return x
 }
-
+{{end}}
 
 func (x *{{Title $tbl.Name}}NamedUpdate) Where() *{{Title $tbl.Name}}NamedWhere {
 	if x.values != nil {
@@ -1122,6 +1134,7 @@ func (x *{{Title $tbl.Name}}NamedSelect) {{Title $col.Name}}() *{{Title $tbl.Nam
 }
 {{end}}
 
+{{ if $tbl.GenEx }}
 func (x *{{Title $tbl.Name}}NamedSelect) ModifyStamp() *{{Title $tbl.Name}}NamedSelect {
 	if *x.n > 0 {
 		x.buf.WriteByte(',')
@@ -1138,7 +1151,7 @@ func (x *{{Title $tbl.Name}}NamedSelect) CreateStamp() *{{Title $tbl.Name}}Named
 	x.buf.Write([]byte("{{BackQuote "create_stamp"}}"))
 	*x.n++
 	return x
-}
+}{{end}}
 
 func (x *{{Title $tbl.Name}}NamedSelect) Where() *{{Title $tbl.Name}}NamedWhere {
 	x.buf.Write([]byte(" from {{$tbl.SqlTable}} where "))
@@ -1163,6 +1176,7 @@ func (x *{{Title $tbl.Name}}NamedWhere) {{Title $col.Name}}() *{{Title $tbl.Name
 }
 {{end}}
 
+{{ if $tbl.GenEx }}
 func (x *{{Title $tbl.Name}}NamedWhere) ModifyStamp() *{{Title $tbl.Name}}NamedWhere {
 	x.buf.Write([]byte("{{BackQuote "modify_stamp"}} = :modify_stamp"))
 	return x
@@ -1172,6 +1186,7 @@ func (x *{{Title $tbl.Name}}NamedWhere) CreateStamp() *{{Title $tbl.Name}}NamedW
 	x.buf.Write([]byte("{{BackQuote "create_stamp"}} = :create_stamp"))
 	return x
 }
+{{end}}
 
 func (x *{{Title $tbl.Name}}NamedWhere) Limit(limit, offset int) *{{Title $tbl.Name}}NamedWhere {
 	x.buf.Write([]byte(" limit "))
@@ -1257,7 +1272,7 @@ func (x *{{Title $tbl.Name}}NamedOrderBy) {{Title $col.Name}}() *{{Title $tbl.Na
 	}
 }
 {{end}}
-
+{{ if $tbl.GenEx }}
 func (x *{{Title $tbl.Name}}NamedOrderAsc) ModifyStamp() *{{Title $tbl.Name}}NamedOrderAsc {
 	if *x.n > 0 {
 		x.buf.WriteByte(',')
@@ -1281,7 +1296,7 @@ func (x *{{Title $tbl.Name}}NamedOrderAsc) CreateStamp() *{{Title $tbl.Name}}Nam
 		n:   x.n,
 	}
 }
-
+{{end}}
 
 func (x *{{Title $tbl.Name}}NamedOrderBy) Limit(limit, offset int) *{{Title $tbl.Name}}NamedOrderBy {
 	x.buf.Write([]byte(" limit "))
