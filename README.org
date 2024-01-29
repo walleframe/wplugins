@@ -10,8 +10,9 @@ walle rpc 代码生成
 ** wredis 
 redis 操作代码生成
 [[./cmd/wredis/readme.org][说明文档]]
-** TODO: wmysql
+** wdb
 mysql 操作代码生成
+[[./cmd/wdb/readme.org][说明文档]]
 * Deprecated
 
 ** toproto
