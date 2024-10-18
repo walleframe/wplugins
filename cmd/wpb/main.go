@@ -43,6 +43,7 @@ func generateWalleProrobuf(prog *buildpb.FileDesc, depend map[string]*buildpb.Fi
 	// parse
 	data := &gengo.GenerateStruct{}
 	data.Package = string(prog.Pkg.Package)
+	// log.Println("package:[", data.Package, "]")
 	// 打印版本信息
 	data.VersionInfo = func() string {
 		buf := bytes.Buffer{}
@@ -94,6 +95,10 @@ func generateWalleProrobuf(prog *buildpb.FileDesc, depend map[string]*buildpb.Fi
 			}
 			// 过滤不生成redis定义消息 - 无意义
 			if m.HasOption(options.RedisOpKey) {
+				return false
+			}
+			// 手动指定忽略消息生成
+			if m.Options.GetOptionBool(options.WPBIngore) {
 				return false
 			}
 			genCount++

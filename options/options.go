@@ -16,6 +16,12 @@ const (
 	ProtoFieldOptSigned = "proto.signed"
 )
 
+// wpb 忽略消息生成
+const (
+	// wpb忽略消息.
+	WPBIngore = "wpb.ignore"
+)
+
 // redisop 插件使用的option 具体规则看文档
 const (
 	// RedisOpKey 定义redis key 名字

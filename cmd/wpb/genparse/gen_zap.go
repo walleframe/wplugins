@@ -48,7 +48,7 @@ func genZapField(field *gengo.GenerateField) (_ string) {
 		return fmt.Sprintf(`enc.AddObject("%s", x.%s)`, field.DescName, field.GoName)
 	case buildpb.FieldType_ListType:
 		if typ.ElemCustom {
-			return fmt.Sprintf(`enc.AddArray("%s", x.%s)`, field.DescName, field.GoName)
+			return fmt.Sprintf(`enc.AddArray("%[1]s", ZapArray%[3]s(x.%[2]s))`, field.DescName, field.GoName, field.GoType)
 		}
 		return fmt.Sprintf(
 			`enc.AddArray("%s", zapcore.ArrayMarshalerFunc(func(ae zapcore.ArrayEncoder) error {
@@ -91,7 +91,7 @@ func getZapMapFunc(field *gengo.GenerateField) (f string) {
 	if typ.ElemCustom {
 		return fmt.Sprintf(`Object(%s, v)`, typMapKey(typ.KeyBase, "k"))
 	}
-	return fmt.Sprintf(`%s(%s, %s)`, getZapBaseTypeFunc(field), typMapKey(typ.KeyBase, "k"), getZapMapValue(field))
+	return fmt.Sprintf(`%s(%s, %s)`, getZapBaseTypeFunc(field.MapKey), typMapKey(typ.KeyBase, "k"), getZapMapValue(field))
 }
 
 func getZapMapValue(field *gengo.GenerateField) (f string) {
@@ -102,7 +102,6 @@ func getZapMapValue(field *gengo.GenerateField) (f string) {
 		return "v"
 	}
 }
-
 
 func typMapKey(typ buildpb.BaseTypeDesc, k string) (tf string) {
 	switch typ {
