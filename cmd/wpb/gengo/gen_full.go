@@ -7,8 +7,8 @@ package {{.Package}}
 
 $Import-Packages$
 
-{{ range .Enums }} {{$EnumType := .TypeName }}
-{{ .LeadingComments }} type {{.TypeName}} int32
+{{ range .Enums }} {{$EnumType := .GoName }}
+{{ .LeadingComments }} type {{$EnumType}} int32
 
 const ( {{ range $i,$item := .Values }}
 	{{ $item.LeadingComments}}{{ $item.ValueName }} {{ $EnumType}} = {{ $item.Num }} {{ $item.TrailingComment }} {{ end }}
@@ -16,22 +16,22 @@ const ( {{ range $i,$item := .Values }}
 
 // Enum value maps for {{.TypeName}}.
 var (
-	{{.GoName}}_name = map[int32]string{ {{range $i,$item := .Values }}
+	{{$EnumType}}Name = map[int32]string{ {{range $i,$item := .Values }}
 		{{ $item.Duplicate }} {{ $item.Num }}: "{{ $item.Desc  }}", {{ end }}
 	}
-	{{.GoName}}_value = map[string]int32{ {{range $i,$item := .Values }}
+	{{$EnumType}}Value = map[string]int32{ {{range $i,$item := .Values }}
 		"{{ $item.Desc  }}": {{ $item.Num }}, {{ end }}
 	}
 )
 
-func (x {{ .TypeName }}) Enum() *{{ .TypeName }} {
-	p := new({{ .TypeName }})
+func (x {{ $EnumType }}) Enum() *{{ $EnumType }} {
+	p := new({{ .GoName }})
 	*p = x
 	return p
 }
 
-func (x {{ .TypeName }}) String() string {
-	if name, ok := {{ .GoName }}_name[int32(x)]; ok {
+func (x {{ $EnumType }}) String() string {
+	if name, ok := {{ .GoName }}Name[int32(x)]; ok {
 		return name
 	}
 	return strconv.FormatInt(int64(x), 10)
